@@ -5,6 +5,7 @@ authors = ["Steve.H <rundrop1@zoho.com>"]
 license = "MIT"
 description = "Translates nucleotide sequences to Amino Acid sequences. (RNA and DNA, shifts reading frames and reverses)"
 repository = "https://github.com/rundrop1/transcriptome_translator"
+documentation = "https://github.com/rundrop1/transcriptome_translator/README.md"
 
 
 [dependencies]
