@@ -2,6 +2,8 @@
 name = "transcriptome_translation"
 version = "0.1.0"
 authors = ["Steve.H <rundrop1@zoho.com>"]
+license = "MIT"
+
 
 [dependencies]
 nom = "~1.2.0"
