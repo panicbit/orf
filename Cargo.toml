@@ -1,0 +1,11 @@
+[package]
+name = "transcriptome_translation"
+version = "0.1.0"
+authors = ["Steve.H <rundrop1@zoho.com>"]
+
+[dependencies]
+nom = "~1.2.0"
+memmap = "0.2.3"
+phf = "0.7.12"
+phf_macros = "0.7.12"
+radix_trie = "0.0.8"
