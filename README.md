@@ -21,6 +21,8 @@ Vim will appear to do nothing but wait a few minutes and once your binary has fi
   Whole thing is fragile and relies on print!("{}"); macros for vim to capture output.
   This works but it's not nice.
   
+  The current strategy is to use vim to capture stdout and then rerun re-use the nom FASTA parser to search for sequences.
+  
 ##TODO:
 
 Remove warnings by fixing camel_casing and other assorted warnings.
