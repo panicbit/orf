@@ -287,7 +287,7 @@ pub enum Human_Readable_AA {
 
 
 pub fn start_parse() {
-    let file_mmap = Mmap::open_path("/Path/To/File", Protection::Read).unwrap();
+    let file_mmap = Mmap::open_path("/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
     let bytes: &[u8] = unsafe {
         file_mmap.as_slice() };
     if let IResult::Done( o, parsed) = FASTA_Read_AA(bytes) {
