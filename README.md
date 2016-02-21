@@ -18,9 +18,15 @@ Vim will appear to do nothing but wait a few minutes and once your binary has fi
   This works but it's not nice.
   
 ##TODO:
+
 Remove warnings by fixing camel_casing and other assorted warnings.
+
 Save file the right way.
+
 Remove the FASTA parser from main.rs and move it to it's own folder/repo.
+
 Complete FASTA spec to include support for ';'.
+
 Add support for Amino Acid Sequence -> Nucleotide sequences.
+
 Make encoding parralel if possible.
