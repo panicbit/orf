@@ -13,6 +13,7 @@ Vim will appear to do nothing but wait a few minutes and once your binary has fi
   
 # Caveats(for which there are many):
   FASTA encodings must decode to utf-8 compliant format.
+  
   Whole thing is fragile and relies on print!("{}"); macros for vim to capture output.
   This works but it's not nice.
   
