@@ -40,4 +40,4 @@ Complete FASTA spec to include support for ';'.
 
 Add support for Amino Acid Sequence -> Nucleotide sequences.
 
-Make encoding parralel if possible.
+Make serializing parralel if possible.
