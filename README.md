@@ -24,7 +24,7 @@ Vim will appear to do nothing but wait a few minutes and once your binary has fi
   FASTA encodings must decode to utf-8 compliant format.
   
   Whole thing is fragile and relies on print!("{}"); macros for vim to capture output.
-  This works but it's not nice.
+  This works but it's not nice.  You WILL get a FASTA compliant file this way.
   
   The current strategy is to use vim to capture stdout and then rerun re-use the nom FASTA parser to search for sequences.
   
