@@ -18,6 +18,8 @@ Vim will appear to do nothing but wait a few minutes and once your binary has fi
 # Compile Time Instructions:
   Included in the repo is test/test-nucleo.FASTA, these are test FASTA encoded sequence data than can be used for your testing purposes.  To compile your data find where the file is loaded in fn start_parse() and modify the Path to suit your needs, currently only works on linux.
   
+  The path must be the full path e.x "/home/user/transcriptome_translator/test/test-nucleo.FASTA"
+  
 # Caveats(for which there are many):
   FASTA encodings must decode to utf-8 compliant format.
   
