@@ -1,6 +1,9 @@
 # transcriptome_translator
 Translates nucleotide sequences to Amino Acid sequences. (RNA and DNA, shifts reading frames and reverses)
 
+
+WARNING: You must edit main.rs to the /home/user/transcriptome_translator/test/test-nucleo.FASTA for this to work properly, it will panic because of the unwrap for loading the file to memmap.
+
 Requires multirust and nightly-2016-02-01 (For phf_macros)
 
 Requires Vim.
