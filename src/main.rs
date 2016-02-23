@@ -1,3 +1,4 @@
+#![feature(plugin)]
 #![feature(type_macros)]
 #![plugin(phf_macros)]
 extern crate phf;
