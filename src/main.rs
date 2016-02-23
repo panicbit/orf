@@ -8,7 +8,6 @@ extern crate nom;
 extern crate memmap;
 extern crate radix_trie;
 
-use radix_trie::Trie;
 use std::str;
 use std::fs::File;
 use std::prelude::*;
