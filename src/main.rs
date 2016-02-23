@@ -6,7 +6,6 @@ extern crate phf;
 #[macro_use]
 extern crate nom;
 extern crate memmap;
-extern crate radix_trie;
 
 use std::str;
 use std::fs::File;
