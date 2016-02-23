@@ -27,155 +27,6 @@ pub struct FASTA_AA<'a> {
     pub sequence: Vec<&'a str>
 }
 
-#[derive(Debug)]
-pub struct FASTA_Nucleotide<'a> {
-    pub id: &'a str,
-    pub sequence: Vec<Nucleotide_Base>
-}
-
-#[derive(Debug, Clone)]
-pub struct AA_Base {
-    pub key: AA_Key
-}
-#[derive(Debug, Clone)]
-pub struct Nucleotide_Base {
-    pub key: FASTA_Nucleotide_Key
-}
-
-#[derive(Debug,PartialEq,Eq,Clone)]
-#[repr(u8)]
-pub enum FASTA_Nucleotide_Key {
-    A,
-    C,
-    G,
-    T,
-    U,
-    R,
-    Y,
-    K,
-    M,
-    S,
-    W,
-    B,
-    D,
-    H,
-    V,
-    N,
-    Hyphen = b'-',
-    Asterisk = b'*'
-}
-#[derive(Debug, Clone)]
-#[repr(u8)]
-pub enum AA_Key {
-    A, //Alanine
-    B, //Aspartic Acid (D) or Asparagine (N)
-    C, //Cysteine
-    D, //Aspartic Acid
-    E, //Glutamic Acid
-    F, //Phenylalanine
-    G, //Glycine
-    H, //Histidine
-    I, //Isoleucine
-    J, //Leucine (L) or Isoleucine (I)
-    K, //Lysine
-    L, //Leucine
-    M, //Methionine
-    N, //Asparagine
-    O, //Pyrrolysine
-    P, //Proline
-    Q, //Glutamine
-    R, //Arginine
-    S, //Serine
-    T, //Threonine
-    U, //Selenocysteine
-    V, //Valine
-    W, //Tryptophan
-    Y, //Tyrosine
-    Z, //Glutamic Acid (E) or Glutamine (Q)
-    X,
-    Asterisk = b'*',
-    Hyphen = b'-',
-    Error
-}
-/*
-const Amino_Acid = {
-    //Alanine
-    'A' => "GCA",
-    'A' => "GCG",
-    'A' => "GCC",
-    'A' => "GCT",
-    //Cysteine
-    'C' => "TGT",
-    'C' => "TGC",
-    //Apsartic Acid
-    'D' => "GAC",
-    'D' => "GAT",
-    //Glutamic Acid
-    'E' => "GAA",
-    'E' => "GAG",
-    //Phenylalanine
-    'F' => "TTT",
-    'F' => "TTC",
-    'G' => "GGA",
-    'G' => "GGG",
-    'G' => "GGC",
-    'G' => "GGT",
-    //Histidine
-    'H' => "CAC",
-    'H' => "CAT",
-    //Isoleucine
-    'I' => "ATT",
-    'I' => "ATC",
-    'I' => "ATA",
-    //Leucine
-    'L' => "TTG",
-    'L' => "TTA",
-    'L' => "CTA",
-    'L' => "CTC",
-    'L' => "CTG",
-    'L' => "CTT",
-    //Lysine
-    'K' => "AAA",
-    'K' => "AAG",
-    //Methionine
-    'M' => "ATG",
-    //Asparagine
-    'N' => "AAT",
-    'N' => "AAC",
-    //Pyrrolysine
-    'O' => "UAG",
-    //Proline
-    'P' => "CCA",
-    'P' => "CCG",
-    'P' => "CCC",
-    'P' => "CCT",
-    //Glutamine
-    'Q' => "CAA",
-    'Q' => "CAG",
-    //Arginine
-    'R' => "AGA",
-    'R' => "AGG",
-    //Serine
-    'S' => "AGT",
-    'S' => "AGC",
-    //Threonine
-    'T' => "ACA",
-    'T' => "ACG",
-    'T' => "ACC",
-    'T' => "ACT",
-    //Selenocysteine
-    'U' => "UGA",
-    //Valine
-    'V' => "GTA",
-    'V' => "GTG",
-    'V' => "GTC",
-    'V' => "GTT",
-    //Tryptophan
-    'W' => "TGG",
-    'Y' => "TAT",
-    'Y' => "TAC"
-};
-*/
 static CODONS: phf::Map<&'static str, u8> = phf_map! {
     //Alanine
     "GCA" => 'A' as u8,
@@ -294,7 +145,7 @@ pub fn start_parse() {
         //Vec<FASTA_AA>
         let complete = nucleo_to_amino(parsed);
         for write in complete {
-            println!("{:?}", write.id);
+            println!("\n{},{:?}", write.window, write.id);
             print!("{:?}", write.sequence);
             //Now we write to disk.
         }
@@ -304,6 +155,7 @@ pub fn start_parse() {
 }
 
 pub struct FASTA_Complete<'a> {
+    window: &'a str,
     id: &'a str,
     sequence: String,
 }
@@ -316,6 +168,7 @@ pub fn nucleo_to_amino(read: Vec<FASTA_AA>) -> Vec<FASTA_Complete> {
 //          println!("\n>{:?} | No Shift", id);
           let result = no_move(amino_seq);
           let complete = FASTA_Complete {
+              window: "> No Move|",
               id: s.id,
               sequence: result
           };
@@ -323,49 +176,77 @@ pub fn nucleo_to_amino(read: Vec<FASTA_AA>) -> Vec<FASTA_Complete> {
 
 
       }
-      /*
       for s in &read {
           let mut seq = s.sequence.clone();
           let mut amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
           let mut amino_seq = amino_seq.join("").into_bytes();
-          println!("\n>{:?} | Shift Left One", s.id);
-          nucleotide_shift_left_one(amino_seq);
+//          println!("\n>{:?} | Shift Left One", s.id);
+          let result = nucleotide_shift_left_one(amino_seq);
+          let complete = FASTA_Complete {
+              window: "> Shift Left One|",
+              id: s.id,
+              sequence: result
+          };
+          completed_fastas.push(complete);
       }
       for s in &read {
           let mut seq = s.sequence.clone();
           let mut amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
           let mut amino_seq = amino_seq.join("").into_bytes();
-          println!("\n>{:?} | Shift Left Two", s.id);
-          nucleotide_shift_left_two(amino_seq);
+//          println!("\n>{:?} | Shift Left Two", s.id);
+          let result = nucleotide_shift_left_two(amino_seq);
+          let complete = FASTA_Complete {
+              window: "> Shift Left Two|",
+              id: s.id,
+              sequence: result
+          };
+          completed_fastas.push(complete);
       }
       for s in &read {
           let mut seq = s.sequence.clone();
           let mut amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
           let mut amino_seq = amino_seq.join("");
           let mut amino_seq = amino_seq.into_bytes();
-          println!("\n>{:?} | Rev No Shift", s.id);
-          rev_no_move(amino_seq);
+//          println!("\n>{:?} | Rev No Shift", s.id);
+          let result = rev_no_move(amino_seq);
+          let complete = FASTA_Complete {
+              window: "> Rev. No Move|",
+              id: s.id,
+              sequence: result
+          };
+          completed_fastas.push(complete);
       }
       for s in &read {
           let mut seq = s.sequence.clone();
           let mut amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
           let mut amino_seq = amino_seq.join("").into_bytes();
-
-          println!("\n>{:?} | Rev Shift Left One", s.id);
-          rev_nucleotide_shift_left_one(amino_seq);
+//          println!("\n>{:?} | Rev Shift Left One", s.id);
+          let result = rev_nucleotide_shift_left_one(amino_seq);
+          let complete = FASTA_Complete {
+              window: "> Rev. Shift Left One|",
+              id: s.id,
+              sequence: result
+          };
+          completed_fastas.push(complete);
       }
       for s in &read {
           let mut seq = s.sequence.clone();
           let mut amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
           let mut amino_seq = amino_seq.join("").into_bytes();
-          println!("\n>{:?} | Rev Shift Left Two", s.id);
-          rev_nucleotide_shift_left_two(amino_seq);
+//          println!("\n>{:?} | Rev Shift Left Two", s.id);
+          let result = rev_nucleotide_shift_left_two(amino_seq);
+          let complete = FASTA_Complete {
+              window: "> Rev. Shift Left Two|",
+              id: s.id,
+              sequence: result
+          };
+          completed_fastas.push(complete);
       }
-      */
       completed_fastas
 }
 
-pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
+pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
+    let mut done = Vec::<u8>::new();
     amino_seq.reverse();
     amino_seq.remove(0);
     amino_seq.remove(0);
@@ -378,7 +259,7 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
             for map in mapped {
                 let mapped = CODONS.get(&*map);
                 match mapped {
-                    Some(ref p) => print!("{}", p),
+                    Some(ref p) => done.push(**p),
                     None => println!("Done!"),
                 }
             }
@@ -392,7 +273,7 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
                     match mapped {
-                        Some(ref p) => print!("{}", p),
+                        Some(ref p) => done.push(**p),
                         None => println!("Done!"),
                     }
                 }
@@ -406,7 +287,7 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
                         match mapped {
-                            Some(ref p) => print!("{}", p),
+                            Some(ref p) => done.push(**p),
                             None => println!("Done!"),
                         }
                     }
@@ -414,9 +295,12 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
             }
         }
     }
+    let done = String::from_utf8(done).unwrap();
+    done
 }
 
-pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
+pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
+    let mut done = Vec::<u8>::new();
     amino_clone.reverse();
     amino_clone.remove(0);
     if amino_clone.len() %3 == 0 {
@@ -428,7 +312,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
             for map in mapped {
                 let mapped = CODONS.get(&*map);
                 match mapped {
-                    Some(ref p) => print!("{}", p),
+                    Some(ref p) => done.push(**p),
                     None => println!("Done!"),
                 }
             }
@@ -442,7 +326,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
                     match mapped {
-                        Some(ref p) => print!("{}", p),
+                        Some(ref p) => done.push(**p),
                         None => println!("Done!"),
                     }
                 }
@@ -456,7 +340,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
                         match mapped {
-                            Some(ref p) => print!("{}", p),
+                            Some(ref p) => done.push(**p),
                             None => println!("Done!"),
                         }
                     }
@@ -464,9 +348,12 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
             }
         }
     }
+    let done = String::from_utf8(done).unwrap();
+    done
 }
 
-pub fn rev_no_move(mut amino_clone: Vec<u8>) {
+pub fn rev_no_move(mut amino_clone: Vec<u8>) -> String {
+    let mut done = Vec::<u8>::new();
     amino_clone.reverse();
     if amino_clone.len() % 3 == 0 {
     //Is it possible to do this without the loop.
@@ -476,7 +363,7 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) {
             for map in mapped {
                 let mapped = CODONS.get(&*map);
                 match mapped {
-                    Some(ref p) => print!("{}", p),
+                    Some(ref p) => done.push(**p),
                     None => println!("Done!"),
                 }
             }
@@ -490,7 +377,7 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) {
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
                     match mapped {
-                        Some(ref p) => print!("{}", p),
+                        Some(ref p) => done.push(**p),
                         None => println!("Done!"),
                     }
                 }
@@ -504,7 +391,7 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) {
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
                         match mapped {
-                            Some(ref p) => print!("{}", p),
+                            Some(ref p) => done.push(**p),
                             None => println!("Done!"),
                         }
                     }
@@ -512,10 +399,13 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) {
             }
         }
     }
+    let done = String::from_utf8(done).unwrap();
+    done
 }
 
 
-pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
+pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
+    let mut done = Vec::<u8>::new();
     amino_seq.remove(0);
     amino_seq.remove(0);
     if amino_seq.len() % 3 == 0 {
@@ -527,7 +417,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
             for map in mapped {
                 let mapped = CODONS.get(&*map);
                 match mapped {
-                    Some(ref p) => print!("{}", p),
+                    Some(ref p) => done.push(**p),
                     None => println!("Done!"),
                 }
             }
@@ -541,7 +431,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
                     match mapped {
-                        Some(ref p) => print!("{}", p),
+                        Some(ref p) => done.push(**p),
                         None => println!("Done!"),
                     }
                 }
@@ -555,7 +445,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
                         match mapped {
-                            Some(ref p) => print!("{}", p),
+                            Some(ref p) => done.push(**p),
                             None => println!("Done!"),
                         }
                     }
@@ -563,9 +453,12 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) {
             }
         }
     }
+    let done = String::from_utf8(done).unwrap();
+    done
 }
 
-pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
+pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
+    let mut done = Vec::<u8>::new();
     amino_clone.remove(0);
     if amino_clone.len() %3 == 0 {
         //Pop other two nucleotides off the back to keep product
@@ -576,7 +469,7 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
             for map in mapped {
                 let mapped = CODONS.get(&*map);
                 match mapped {
-                    Some(ref p) => print!("{}", p),
+                    Some(ref p) => done.push(**p),
                     None => println!("Done!"),
                 }
             }
@@ -590,7 +483,7 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
                     match mapped {
-                        Some(ref p) => print!("{}", p),
+                        Some(ref p) => done.push(**p),
                         None => println!("Done!"),
                     }
                 }
@@ -604,7 +497,7 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
                         match mapped {
-                            Some(ref p) => print!("{}", p),
+                            Some(ref p) => done.push(**p),
                             None => println!("Done!"),
                         }
                     }
@@ -612,6 +505,8 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) {
             }
         }
     }
+    let done = String::from_utf8(done).unwrap();
+    done
 }
 
 pub fn no_move<'a>(mut amino_clone: Vec<u8>) -> String {
