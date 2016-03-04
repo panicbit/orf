@@ -129,7 +129,7 @@ static CODONS: phf::Map<&'static str, u8> = phf_map! {
 
 
 fn static_fasta<'a>() -> &'static Mmap {
-    let file_mmap = Mmap::open_path("/home/dhc-user/sarasshit/HA412_trinity.fa", Protection::Read).unwrap();
+    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
     &*into_static(file_mmap)
 }
 
