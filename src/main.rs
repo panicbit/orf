@@ -6,7 +6,7 @@ extern crate phf;
 #[macro_use]
 extern crate nom;
 extern crate memmap;
-extern crate rayon;
+extern crate threadpool;
 
 use std::str;
 use std::io::prelude::*;
@@ -15,6 +15,13 @@ use nom::IResult;
 use memmap::{Mmap, Protection};
 use std::vec::*;
 use std::fs::OpenOptions;
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
+use std::thread;
+use std::mem;
+use threadpool::ThreadPool;
+use std::sync::mpsc::channel;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct FASTA<'a> {
@@ -120,130 +127,120 @@ static CODONS: phf::Map<&'static str, u8> = phf_map! {
     //gap of indeterminate length (-)
 };
 
+
+fn static_fasta<'a>() -> &'static Mmap {
+    let file_mmap = Mmap::open_path("/home/dhc-user/sarasshit/HA412_trinity.fa", Protection::Read).unwrap();
+    &*into_static(file_mmap)
+}
+
+fn into_static<T: 'static>(t: T) -> &'static mut T {
+    unsafe {
+        &mut *Box::into_raw(Box::new(t))
+    }
+}
 pub fn start_parse() {
-    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/tests/test-nucleo.FASTA", Protection::Read).unwrap();
+    let file_mmap = static_fasta();
     let bytes: &[u8] = unsafe {
         file_mmap.as_slice() };
 //This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
-    if let IResult::Done(_, parsed) = FASTA_Deserialize(bytes) {
-//FASTA_Deserialize feeds the memory mapped slices to a nom parser.
-//TODO: FASTA comment ';'
-        let complete = nucleo_to_amino(parsed);
-        let mut file = OpenOptions::new()
-                               .read(false)
-                               .write(true)
-                               .create(true)
-                               .open("./results.txt")
-                               .unwrap();
-        for write in complete {
-        //    println!("\n{},{:?}", write.window, write.id);
-            file.write(write.window.as_bytes());
-            file.write(write.id.as_bytes());
-            file.write(write.sequence.as_bytes());
-        //    print!("{:?}", write.sequence);
-            //Now we write to disk.
+    let mut file = OpenOptions::new().create(true).read(false).write(true).open("./results.txt").unwrap();
+    let threadpool = ThreadPool::new(4);
+    let (tx, rx) = channel();
+    if let IResult::Done(_,o) = fasta_deserialize(bytes) {
+        for fasta in o {
+            let tx = tx.clone();
+            threadpool.execute(move || {
+                let amino_seq: Vec<u8> = fasta.sequence
+                    .into_iter()
+                    .fold(Vec::new(), |mut acc, item| {
+                            acc.extend(item.as_bytes());
+                            acc
+                    });
+                let mut vec: Vec<FASTA_Complete> = Vec::new();
+                let nomove = FASTA_Complete {
+                    window: "> No Move|",
+                    id: fasta.id,
+                    sequence: no_move(amino_seq.clone())
+                };
+                let sl1 = FASTA_Complete {
+                    window: "> Shift Left One|",
+                    id: fasta.id,
+                    sequence: nucleotide_shift_left_one(amino_seq.clone())
+                };
+                let sl2 = FASTA_Complete {
+                    window: "> Shift Left Two|",
+                    id: fasta.id,
+                    sequence: nucleotide_shift_left_two(amino_seq.clone())
+                };
+                let rnm = FASTA_Complete {
+                    window: "> Rev. No Move|",
+                    id: fasta.id,
+                    sequence: rev_no_move(amino_seq.clone())
+                };
+                let rsl1 = FASTA_Complete {
+                    window: "> Rev. Shift Left One|",
+                    id: fasta.id,
+                    sequence: rev_nucleotide_shift_left_one(amino_seq.clone())
+                };
+                let rsl2 = FASTA_Complete {
+                    window: "> Rev. Shift Left Two|",
+                    id: fasta.id,
+                    sequence: rev_nucleotide_shift_left_two(amino_seq.clone())
+                };
+                vec.push(nomove);
+                vec.push(sl1);
+                vec.push(sl2);
+                vec.push(rnm);
+                vec.push(rsl1);
+                vec.push(rsl2);
+                tx.send(vec).unwrap();
+            });
+        }
+        drop(tx);
+        for results in rx {
+            for results in results {
+                file.write(results.window.as_bytes());
+                file.write(results.id.as_bytes());
+                file.write(results.sequence.as_bytes());
+            }
         }
         file.sync_all();
 
-        // Is for debugging
-    //    print!(" o is, {:?}", str::from_utf8(o) );
     }
 }
 
+#[derive(Debug)]
 pub struct FASTA_Complete<'a> {
     window: &'a str,
     id: &'a str,
     sequence: String,
+}
+
+impl<'a> FASTA_Complete<'a> {
+    fn new() -> FASTA_Complete<'a> {
+        let sequence = String::new();
+        let window = "None";
+        let id = "None";
+        let FASTA_Complete = FASTA_Complete {
+            window: window,
+            id: id,
+            sequence: sequence
+        };
+        FASTA_Complete
+    }
 }
 //FASTA_Complete.window are hardcoded to include labeling the id with '>
 //and their reading frame.
 //There is probably substantial room for improvement and the code could be deduplicated
 //After memmapping the file.  I personally prefer laying it all out even if it does get
 //a bit lengthy.
-pub fn nucleo_to_amino(read: Vec<FASTA>) -> Vec<FASTA_Complete> {
-    let mut completed_fastas = Vec::<(FASTA_Complete)>::new();
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | No Shift", id);
-        let result = no_move(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> No Move|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-    }
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | Shift Left One", s.id);
-        let result = nucleotide_shift_left_one(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> Shift Left One|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-    }
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | Shift Left Two", s.id);
-        let result = nucleotide_shift_left_two(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> Shift Left Two|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-    }
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | Rev No Shift", s.id);
-        let result = rev_no_move(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> Rev. No Move|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-    }
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | Rev Shift Left One", s.id);
-        let result = rev_nucleotide_shift_left_one(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> Rev. Shift Left One|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-    }
-    for s in &read {
-        let mut seq = s.sequence.clone();
-        let amino_seq: Vec<&str> = seq.drain(..).collect::<Vec<&str>>();
-        let amino_seq = amino_seq.join("").into_bytes();
-//          println!("\n>{:?} | Rev Shift Left Two", s.id);
-        let result = rev_nucleotide_shift_left_two(amino_seq);
-        let complete = FASTA_Complete {
-            window: "> Rev. Shift Left Two|",
-            id: s.id,
-            sequence: result
-        };
-        completed_fastas.push(complete);
-        }
-        completed_fastas
+pub fn rc_handler(read: FASTA) -> Rc<FASTA> {
+    let amino_seq = Rc::new(read);
+    amino_seq
+
 }
 
-pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // fn rev_nucleotide_shift_left_two does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -258,13 +255,14 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
+    let mut amino_clone = amino_clone;
     done.push(b'\n');
-    amino_seq.reverse();
-    amino_seq.remove(0);
-    amino_seq.remove(0);
-    if amino_seq.len() % 3 == 0 {
-        while amino_seq.is_empty() == false {
-            let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+    amino_clone.reverse();
+    amino_clone.remove(0);
+    amino_clone.remove(0);
+    if amino_clone.len() % 3 == 0 {
+        while amino_clone.is_empty() == false {
+            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
             let mapped = String::from_utf8(mapped);
             for map in mapped {
                 let mapped = CODONS.get(&*map);
@@ -275,10 +273,10 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
             }
         }
     } else {
-        amino_seq.pop();
-        if amino_seq.len() % 3 == 0 {
-            while amino_seq.is_empty() == false {
-                let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+        amino_clone.pop();
+        if amino_clone.len() % 3 == 0 {
+            while amino_clone.is_empty() == false {
+                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
                 let mapped = String::from_utf8(mapped);
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
@@ -289,10 +287,10 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
                 }
             }
         } else {
-            amino_seq.pop();
-            if amino_seq.len() % 3 == 0 {
-                while amino_seq.is_empty() == false {
-                    let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+            amino_clone.pop();
+            if amino_clone.len() % 3 == 0 {
+                while amino_clone.is_empty() == false {
+                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
                     let mapped = String::from_utf8(mapped);
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
@@ -310,7 +308,7 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
     done
 }
 
-pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // fn rev_nucleotide_shift_left_one does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -324,6 +322,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
+    let mut amino_clone = amino_clone;
     done.push(b'\n');
     amino_clone.reverse();
     amino_clone.remove(0);
@@ -377,7 +376,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
     done
 }
 
-pub fn rev_no_move(mut amino_clone: Vec<u8>) -> String {
+pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
     // fn rev_no_move does the following:
     // Reverses all elements in the Array.
     // Then we check to see if the vector is a multiple of three
@@ -390,6 +389,7 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
+    let mut amino_clone = amino_clone;
     done.push(b'\n');
     amino_clone.reverse();
     if amino_clone.len() % 3 == 0 {
@@ -440,8 +440,7 @@ pub fn rev_no_move(mut amino_clone: Vec<u8>) -> String {
     done
 }
 
-
-pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // fn nucleotide_shift_left_two does the following:
     // Removes element at position '0'
     // Removes elemtne at position '0'
@@ -455,11 +454,12 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
-    amino_seq.remove(0);
-    amino_seq.remove(0);
-    if amino_seq.len() % 3 == 0 {
-        while amino_seq.is_empty() == false {
-            let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+    let mut amino_clone = amino_clone;
+    amino_clone.remove(0);
+    amino_clone.remove(0);
+    if amino_clone.len() % 3 == 0 {
+        while amino_clone.is_empty() == false {
+            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
             let mapped = String::from_utf8(mapped);
             for map in mapped {
                 let mapped = CODONS.get(&*map);
@@ -470,10 +470,10 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
             }
         }
     } else {
-        amino_seq.pop();
-        if amino_seq.len() % 3 == 0 {
-            while amino_seq.is_empty() == false {
-                let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+        amino_clone.pop();
+        if amino_clone.len() % 3 == 0 {
+            while amino_clone.is_empty() == false {
+                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
                 let mapped = String::from_utf8(mapped);
                 for map in mapped {
                     let mapped = CODONS.get(&*map);
@@ -484,10 +484,10 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
                 }
             }
         } else {
-            amino_seq.pop();
-            if amino_seq.len() % 3 == 0 {
-                while amino_seq.is_empty() == false {
-                    let mapped = amino_seq.drain(..3).collect::<Vec<u8>>();
+            amino_clone.pop();
+            if amino_clone.len() % 3 == 0 {
+                while amino_clone.is_empty() == false {
+                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
                     let mapped = String::from_utf8(mapped);
                     for map in mapped {
                         let mapped = CODONS.get(&*map);
@@ -505,7 +505,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: Vec<u8>) -> String {
     done
 }
 
-pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // fn nucleotide_shift_left_one does the following:
     // Removes elemtne at position '0'
     // Then we check to see if the vector is a multiple of three
@@ -518,6 +518,7 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
+    let mut amino_clone = amino_clone;
     done.push(b'\n');
     amino_clone.remove(0);
     if amino_clone.len() %3 == 0 {
@@ -568,7 +569,7 @@ pub fn nucleotide_shift_left_one(mut amino_clone: Vec<u8>) -> String {
     done
 }
 
-pub fn no_move<'a>(mut amino_clone: Vec<u8>) -> String {
+pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
     // fn no_move does the following:
     // Then we check to see if the vector is a multiple of three
     // IF the vector is not a multiple of three we remove from the end
@@ -580,6 +581,7 @@ pub fn no_move<'a>(mut amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = Vec::<u8>::new();
+    let mut amino_clone = amino_clone;
     done.push(b'\n');
     if amino_clone.len() % 3 == 0 {
         while amino_clone.is_empty() == false {
@@ -629,7 +631,7 @@ pub fn no_move<'a>(mut amino_clone: Vec<u8>) -> String {
     done
 }
 
-pub fn FASTA_Deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
+pub fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
     many0!(input,
       chain!(
         tag!(">") ~
