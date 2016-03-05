@@ -1,6 +1,11 @@
 # transcriptome_translator
 Translates nucleotide sequences to Amino Acid sequences. (RNA and DNA, shifts reading frames and reverses)
 
+Takes a FASTA file of nucleotide sequences and outputs another FASTA file with Amino Acids.
+
+Deserializing is done with nom.
+
+Threadpools are utilized to allow scaling with hardware, after nom has finished parsing tasks are dispatched as threads become available and then the file is written into a fasta format text file.
 
 WARNING: You must edit main.rs to the /home/user/transcriptome_translator/test/test-nucleo.FASTA for this to work properly, it will panic because of the unwrap for loading the file to memmap.
 
@@ -15,12 +20,8 @@ WARNING: You must edit main.rs to the /home/user/transcriptome_translator/test/t
   
 ##TODO:
 
+Use fold_many_0! from nom to allow parsing deserialized structures as they are completed instead of weaiting for a vector of types.
 Remove warnings by fixing camel_casing and other assorted warnings.
-
-Save file the right way.
-
 Remove the FASTA parser from main.rs and move it to it's own folder/repo.
-
 Complete FASTA spec to include support for ';'.
-
-Make serializing parralel if possible.
+Create a parser to read FASTA in reverse to eliminate the need for vec.reverse(), this should be done with another thread.
