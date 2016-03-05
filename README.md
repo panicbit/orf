@@ -34,4 +34,4 @@ Create a parser to read FASTA in reverse to eliminate the need for vec.reverse()
 
 Last but certainly not least:
 
-[https://github.com/panicbit](panicbit)
+[panicbit](https://github.com/panicbit)
