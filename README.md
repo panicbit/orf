@@ -29,3 +29,9 @@ Remove the FASTA parser from main.rs and move it to it's own folder/repo.
 Complete FASTA spec to include support for ';'.
 
 Create a parser to read FASTA in reverse to eliminate the need for vec.reverse(), this should be done with another thread.
+
+#Contributors
+
+Last but certainly not least:
+
+[https://github.com/panicbit](panicbit)
