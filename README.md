@@ -21,7 +21,11 @@ WARNING: You must edit main.rs to the /home/user/transcriptome_translator/test/t
 ##TODO:
 
 Use fold_many_0! from nom to allow parsing deserialized structures as they are completed instead of weaiting for a vector of types.
+
 Remove warnings by fixing camel_casing and other assorted warnings.
+
 Remove the FASTA parser from main.rs and move it to it's own folder/repo.
+
 Complete FASTA spec to include support for ';'.
+
 Create a parser to read FASTA in reverse to eliminate the need for vec.reverse(), this should be done with another thread.
