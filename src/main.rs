@@ -260,49 +260,9 @@ pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     amino_clone.reverse();
     amino_clone.remove(0);
     amino_clone.remove(0);
-    if amino_clone.len() % 3 == 0 {
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
@@ -326,51 +286,9 @@ pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     done.push(b'\n');
     amino_clone.reverse();
     amino_clone.remove(0);
-    if amino_clone.len() %3 == 0 {
-        //Pop other two nucleotides off the back to keep product
-        //a remainder of three.
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
@@ -392,49 +310,9 @@ pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
     let mut amino_clone = amino_clone;
     done.push(b'\n');
     amino_clone.reverse();
-    if amino_clone.len() % 3 == 0 {
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
@@ -457,49 +335,9 @@ pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     let mut amino_clone = amino_clone;
     amino_clone.remove(0);
     amino_clone.remove(0);
-    if amino_clone.len() % 3 == 0 {
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
@@ -521,49 +359,9 @@ pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     let mut amino_clone = amino_clone;
     done.push(b'\n');
     amino_clone.remove(0);
-    if amino_clone.len() %3 == 0 {
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
@@ -583,52 +381,33 @@ pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
     let mut done = Vec::<u8>::new();
     let mut amino_clone = amino_clone;
     done.push(b'\n');
-    if amino_clone.len() % 3 == 0 {
-        while amino_clone.is_empty() == false {
-            let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-            let mapped = String::from_utf8(mapped);
-            for map in mapped {
-                let mapped = CODONS.get(&*map);
-                match mapped {
-                    Some(ref p) => done.push(**p),
-                    None => println!("Done!"),
-                }
-            }
-        }
-    } else {
-        amino_clone.pop();
-        if amino_clone.len() % 3 == 0 {
-            while amino_clone.is_empty() == false {
-                let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                let mapped = String::from_utf8(mapped);
-                for map in mapped {
-                    let mapped = CODONS.get(&*map);
-                    match mapped {
-                        Some(ref p) => done.push(**p),
-                        None => println!("Done!"),
-                    }
-                }
-            }
-        } else {
-            amino_clone.pop();
-            if amino_clone.len() % 3 == 0 {
-                while amino_clone.is_empty() == false {
-                    let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-                    let mapped = String::from_utf8(mapped);
-                    for map in mapped {
-                        let mapped = CODONS.get(&*map);
-                        match mapped {
-                            Some(ref p) => done.push(**p),
-                            None => println!("Done!"),
-                        }
-                    }
-                }
-            }
-        }
-    }
+
+    trim_and_map(&mut amino_clone, &mut done);
+
     done.push(b'\n');
     let done = String::from_utf8(done).unwrap();
     done
+}
+
+fn trim_and_map(amino_clone: &mut Vec<u8>, done: &mut Vec<u8>) {
+    // Trim elements from the end until the length is a multiple of 3
+    let waste = amino_clone.len() % 3;
+    for _ in 0..waste {
+        amino_clone.pop();
+    }
+    debug_assert!(amino_clone.len() % 3 == 0);
+
+    while amino_clone.is_empty() == false {
+        let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
+        let mapped = String::from_utf8(mapped);
+        for map in mapped {
+            let mapped = CODONS.get(&*map);
+            match mapped {
+                Some(ref p) => done.push(**p),
+                None => println!("Done!"),
+            }
+        }
+    }
 }
 
 pub fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
