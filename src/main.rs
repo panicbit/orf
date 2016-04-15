@@ -127,19 +127,8 @@ static CODONS: phf::Map<&'static str, u8> = phf_map! {
     //gap of indeterminate length (-)
 };
 
-
-fn static_fasta<'a>() -> &'static Mmap {
-    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
-    &*into_static(file_mmap)
-}
-
-fn into_static<T: 'static>(t: T) -> &'static mut T {
-    unsafe {
-        &mut *Box::into_raw(Box::new(t))
-    }
-}
 pub fn start_parse() {
-    let file_mmap = static_fasta();
+    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
     let bytes: &[u8] = unsafe {
         file_mmap.as_slice() };
 //This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
