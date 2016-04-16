@@ -6,7 +6,7 @@ extern crate phf;
 #[macro_use]
 extern crate nom;
 extern crate memmap;
-extern crate threadpool;
+extern crate scoped_threadpool;
 
 use std::str;
 use std::io::prelude::*;
@@ -19,7 +19,7 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 use std::thread;
 use std::mem;
-use threadpool::ThreadPool;
+use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
 use std::rc::Rc;
 
@@ -127,76 +127,69 @@ static CODONS: phf::Map<&'static str, u8> = phf_map! {
     //gap of indeterminate length (-)
 };
 
-
-fn static_fasta<'a>() -> &'static Mmap {
-    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
-    &*into_static(file_mmap)
-}
-
-fn into_static<T: 'static>(t: T) -> &'static mut T {
-    unsafe {
-        &mut *Box::into_raw(Box::new(t))
-    }
-}
 pub fn start_parse() {
-    let file_mmap = static_fasta();
+    let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
     let bytes: &[u8] = unsafe {
         file_mmap.as_slice() };
 //This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
     let mut file = OpenOptions::new().create(true).read(false).write(true).open("./results.txt").unwrap();
-    let threadpool = ThreadPool::new(4);
+    let mut threadpool = ThreadPool::new(4);
     let (tx, rx) = channel();
     if let IResult::Done(_,o) = fasta_deserialize(bytes) {
-        for fasta in o {
-            let tx = tx.clone();
-            threadpool.execute(move || {
-                let amino_seq: Vec<u8> = fasta.sequence
-                    .into_iter()
-                    .fold(Vec::new(), |mut acc, item| {
-                            acc.extend(item.as_bytes());
-                            acc
-                    });
-                let mut vec: Vec<FASTA_Complete> = Vec::new();
-                let nomove = FASTA_Complete {
-                    window: "> No Move|",
-                    id: fasta.id,
-                    sequence: no_move(amino_seq.clone())
-                };
-                let sl1 = FASTA_Complete {
-                    window: "> Shift Left One|",
-                    id: fasta.id,
-                    sequence: nucleotide_shift_left_one(amino_seq.clone())
-                };
-                let sl2 = FASTA_Complete {
-                    window: "> Shift Left Two|",
-                    id: fasta.id,
-                    sequence: nucleotide_shift_left_two(amino_seq.clone())
-                };
-                let rnm = FASTA_Complete {
-                    window: "> Rev. No Move|",
-                    id: fasta.id,
-                    sequence: rev_no_move(amino_seq.clone())
-                };
-                let rsl1 = FASTA_Complete {
-                    window: "> Rev. Shift Left One|",
-                    id: fasta.id,
-                    sequence: rev_nucleotide_shift_left_one(amino_seq.clone())
-                };
-                let rsl2 = FASTA_Complete {
-                    window: "> Rev. Shift Left Two|",
-                    id: fasta.id,
-                    sequence: rev_nucleotide_shift_left_two(amino_seq.clone())
-                };
-                vec.push(nomove);
-                vec.push(sl1);
-                vec.push(sl2);
-                vec.push(rnm);
-                vec.push(rsl1);
-                vec.push(rsl2);
-                tx.send(vec).unwrap();
-            });
-        }
+        threadpool.scoped(|threadpool| {
+            for fasta in o {
+                let tx = tx.clone();
+                threadpool.execute(move || {
+                    let amino_seq: Vec<u8> = fasta.sequence
+                        .into_iter()
+                        .fold(Vec::new(), |mut acc, item| {
+                                acc.extend(item.as_bytes());
+                                acc
+                        });
+                    let mut vec: Vec<FASTA_Complete> = Vec::new();
+                    let nomove = FASTA_Complete {
+                        window: "> No Move|",
+                        id: fasta.id,
+                        sequence: no_move(amino_seq.clone())
+                    };
+                    let sl1 = FASTA_Complete {
+                        window: "> Shift Left One|",
+                        id: fasta.id,
+                        sequence: nucleotide_shift_left_one(amino_seq.clone())
+                    };
+                    let sl2 = FASTA_Complete {
+                        window: "> Shift Left Two|",
+                        id: fasta.id,
+                        sequence: nucleotide_shift_left_two(amino_seq.clone())
+                    };
+                    let rnm = FASTA_Complete {
+                        window: "> Rev. No Move|",
+                        id: fasta.id,
+                        sequence: rev_no_move(amino_seq.clone())
+                    };
+                    let rsl1 = FASTA_Complete {
+                        window: "> Rev. Shift Left One|",
+                        id: fasta.id,
+                        sequence: rev_nucleotide_shift_left_one(amino_seq.clone())
+                    };
+                    let rsl2 = FASTA_Complete {
+                        window: "> Rev. Shift Left Two|",
+                        id: fasta.id,
+                        sequence: rev_nucleotide_shift_left_two(amino_seq.clone())
+                    };
+                    vec.push(nomove);
+                    vec.push(sl1);
+                    vec.push(sl2);
+                    vec.push(rnm);
+                    vec.push(rsl1);
+                    vec.push(rsl2);
+                    tx.send(vec).unwrap();
+                });
+            }
+        });
+
         drop(tx);
+
         for results in rx {
             for results in results {
                 file.write(results.window.as_bytes());
