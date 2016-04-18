@@ -7,6 +7,7 @@ extern crate phf;
 extern crate nom;
 extern crate memmap;
 extern crate scoped_threadpool;
+extern crate monster;
 
 use std::str;
 use std::io::prelude::*;
@@ -22,6 +23,7 @@ use std::mem;
 use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
 use std::rc::Rc;
+use monster::incubation::{SliceDropFirst, SliceDropLast};
 
 #[derive(Debug)]
 pub struct FASTA<'a> {
@@ -250,11 +252,8 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     let mut done = String::new();
     done.push('\n');
 
-    // Shift elements to the right twice
-    amino_seq = match amino_seq.len() {
-        0 ... 2 => &[],
-        _ => &amino_seq[..amino_seq.len()-2]
-    };
+    // Shift sequence two elements to the right
+    amino_seq = amino_seq.drop_last(2);
 
     rev_trim_and_map(&amino_seq, &mut done);
 
@@ -279,10 +278,7 @@ pub fn rev_nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     done.push('\n');
 
     // Shift elements to the right once
-    amino_seq = match amino_seq.len() {
-        0 ... 1 => &[],
-        _ => &amino_seq[..amino_seq.len()-1]
-    };
+    amino_seq = amino_seq.drop_last(1);
 
     rev_trim_and_map(&amino_seq, &mut done);
 
@@ -327,10 +323,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     let mut done = String::new();
 
     // Shift elements to the left twice
-    amino_seq = match amino_seq.len() {
-        0 ... 2 => &[],
-        _ => &amino_seq[2..]
-    };
+    amino_seq = amino_seq.drop_first(2);
 
     trim_and_map(&amino_seq, &mut done);
 
@@ -354,10 +347,7 @@ pub fn nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     done.push('\n');
 
     // Shift elements to the left once
-    amino_seq = match amino_seq.len() {
-        0 ... 1 => &[],
-        _ => &amino_seq[1..]
-    };
+    amino_seq = amino_seq.drop_first(1);
 
     trim_and_map(amino_seq, &mut done);
 
@@ -387,8 +377,7 @@ pub fn no_move<'a>(amino_seq: &[u8]) -> String {
 
 fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     // Trim elements from the end until the length is a multiple of 3
-    let waste = amino_seq.len() % 3;
-    amino_seq = &amino_seq[..amino_seq.len()-waste];
+    amino_seq = amino_seq.drop(amino_seq.len() % 3);
     debug_assert!(amino_seq.len() % 3 == 0);
 
     while !amino_seq.is_empty() {
@@ -407,8 +396,7 @@ fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
 
 fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     // Trim elements from the beginning until the length is a multiple of 3
-    let waste = amino_seq.len() % 3;
-    amino_seq = &amino_seq[waste..];
+    amino_seq = amino_seq.drop_first(amino_seq.len() % 3);
     debug_assert!(amino_seq.len() % 3 == 0);
 
     while !amino_seq.is_empty() {

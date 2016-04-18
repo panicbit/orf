@@ -3,6 +3,7 @@ name = "transcriptome_translation"
 version = "0.1.0"
 dependencies = [
  "memmap 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "monster 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf_macros 0.7.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -43,6 +44,11 @@ dependencies = [
  "libc 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "monster"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "nom"
