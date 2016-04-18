@@ -150,32 +150,32 @@ pub fn start_parse() {
                     let nomove = FASTA_Complete {
                         window: "> No Move|",
                         id: fasta.id,
-                        sequence: no_move(amino_seq.clone())
+                        sequence: no_move(&amino_seq)
                     };
                     let sl1 = FASTA_Complete {
                         window: "> Shift Left One|",
                         id: fasta.id,
-                        sequence: nucleotide_shift_left_one(amino_seq.clone())
+                        sequence: nucleotide_shift_left_one(&amino_seq)
                     };
                     let sl2 = FASTA_Complete {
                         window: "> Shift Left Two|",
                         id: fasta.id,
-                        sequence: nucleotide_shift_left_two(amino_seq.clone())
+                        sequence: nucleotide_shift_left_two(&amino_seq)
                     };
                     let rnm = FASTA_Complete {
                         window: "> Rev. No Move|",
                         id: fasta.id,
-                        sequence: rev_no_move(amino_seq.clone())
+                        sequence: rev_no_move(&amino_seq)
                     };
                     let rsl1 = FASTA_Complete {
                         window: "> Rev. Shift Left One|",
                         id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_one(amino_seq.clone())
+                        sequence: rev_nucleotide_shift_left_one(&amino_seq)
                     };
                     let rsl2 = FASTA_Complete {
                         window: "> Rev. Shift Left Two|",
                         id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_two(amino_seq.clone())
+                        sequence: rev_nucleotide_shift_left_two(&amino_seq)
                     };
                     vec.push(nomove);
                     vec.push(sl1);
@@ -233,7 +233,7 @@ pub fn rc_handler(read: FASTA) -> Rc<FASTA> {
 
 }
 
-pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // fn rev_nucleotide_shift_left_two does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -248,19 +248,21 @@ pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
     done.push('\n');
-    amino_clone.reverse();
-    amino_clone.remove(0);
-    amino_clone.remove(0);
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the right twice
+    amino_seq = match amino_seq.len() {
+        0 ... 2 => &[],
+        _ => &amino_seq[..amino_seq.len()-2]
+    };
+
+    rev_trim_and_map(&amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     // fn rev_nucleotide_shift_left_one does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -274,18 +276,21 @@ pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
     done.push('\n');
-    amino_clone.reverse();
-    amino_clone.remove(0);
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the right once
+    amino_seq = match amino_seq.len() {
+        0 ... 1 => &[],
+        _ => &amino_seq[..amino_seq.len()-1]
+    };
+
+    rev_trim_and_map(&amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
+pub fn rev_no_move(amino_seq: &[u8]) -> String {
     // fn rev_no_move does the following:
     // Reverses all elements in the Array.
     // Then we check to see if the vector is a multiple of three
@@ -298,17 +303,15 @@ pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
     done.push('\n');
-    amino_clone.reverse();
 
-    trim_and_map(&mut amino_clone, &mut done);
+    rev_trim_and_map(&amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // fn nucleotide_shift_left_two does the following:
     // Removes element at position '0'
     // Removes elemtne at position '0'
@@ -322,17 +325,20 @@ pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
-    amino_clone.remove(0);
-    amino_clone.remove(0);
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the left twice
+    amino_seq = match amino_seq.len() {
+        0 ... 2 => &[],
+        _ => &amino_seq[2..]
+    };
+
+    trim_and_map(&amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     // fn nucleotide_shift_left_one does the following:
     // Removes elemtne at position '0'
     // Then we check to see if the vector is a multiple of three
@@ -345,17 +351,21 @@ pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
     done.push('\n');
-    amino_clone.remove(0);
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the left once
+    amino_seq = match amino_seq.len() {
+        0 ... 1 => &[],
+        _ => &amino_seq[1..]
+    };
+
+    trim_and_map(amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
+pub fn no_move<'a>(amino_seq: &[u8]) -> String {
     // fn no_move does the following:
     // Then we check to see if the vector is a multiple of three
     // IF the vector is not a multiple of three we remove from the end
@@ -367,26 +377,44 @@ pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
     let mut done = String::new();
-    let mut amino_clone = amino_clone;
     done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    trim_and_map(amino_seq, &mut done);
 
     done.push('\n');
     done
 }
 
-fn trim_and_map(amino_clone: &mut Vec<u8>, done: &mut String) {
+fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     // Trim elements from the end until the length is a multiple of 3
-    let waste = amino_clone.len() % 3;
-    for _ in 0..waste {
-        amino_clone.pop();
-    }
-    debug_assert!(amino_clone.len() % 3 == 0);
+    let waste = amino_seq.len() % 3;
+    amino_seq = &amino_seq[..amino_seq.len()-waste];
+    debug_assert!(amino_seq.len() % 3 == 0);
 
-    while amino_clone.is_empty() == false {
-        let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-        let mapped = String::from_utf8(mapped);
+    while !amino_seq.is_empty() {
+        let mapped = &amino_seq[..3];
+        amino_seq = &amino_seq[3..];
+        let mapped = str::from_utf8(mapped);
+        for map in mapped {
+            let mapped = CODONS.get(&*map);
+            match mapped {
+                Some(ref p) => done.push(**p),
+                None => println!("Done!"),
+            }
+        }
+    }
+}
+
+fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
+    // Trim elements from the beginning until the length is a multiple of 3
+    let waste = amino_seq.len() % 3;
+    amino_seq = &amino_seq[waste..];
+    debug_assert!(amino_seq.len() % 3 == 0);
+
+    while !amino_seq.is_empty() {
+        let mapped = &amino_seq[amino_seq.len()-3..];
+        amino_seq = &amino_seq[..amino_seq.len()-3];
+        let mapped = str::from_utf8(mapped);
         for map in mapped {
             let mapped = CODONS.get(&*map);
             match mapped {
