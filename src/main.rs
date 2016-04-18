@@ -129,6 +129,105 @@ static CODONS: phf::Map<&'static [u8], char> = phf_map! {
     //gap of indeterminate length (-)
 };
 
+// Reversed codon map
+static REV_CODONS: phf::Map<&'static [u8], char> = phf_map! {
+    //Alanine
+    b"ACG" => 'A',
+    b"GCG" => 'A',
+    b"CCG" => 'A',
+    b"TCG" => 'A',
+    //Aspartic_Acid (D)
+    //Asparagine (N)
+    //Cysteine
+    b"TGT" => 'C',
+    b"CGT" => 'C',
+    //Aspartic_Acid
+    b"CAG" => 'D',
+    b"TAG" => 'D',
+    //Glutamic_Acid
+    b"AAG" => 'E',
+    b"GAG" => 'E',
+    //Phenylalanine
+    b"TTT" => 'F',
+    b"CTT" => 'F',
+    //Glycine
+    b"AGG" => 'G',
+    b"GGG" => 'G',
+    b"CGG" => 'G',
+    b"TGG" => 'G',
+    //Histidine
+    b"CAC" => 'H',
+    b"TAC" => 'H',
+    //Isoleucine
+    b"TTA" => 'I',
+    b"CTA" => 'I',
+    b"ATA" => 'I',
+    //Leucine (L)
+    b"GTT" => 'L',
+    b"ATT" => 'L',
+    b"ATC" => 'L',
+    b"CTC" => 'L',
+    b"GTC" => 'L',
+    b"TTC" => 'L',
+    //Lysine (K)
+    b"AAA" => 'K',
+    b"GAA" => 'K',
+    //Methionine (M)
+    b"GTA" => 'M',
+    //Asparagine (N)
+    b"TAA" => 'N',
+    b"CAA" => 'N',
+    //Pyrrolysine (O) Special Stop Codon
+    b"GAU" => 'O',
+    //Proline (P)
+    b"ACC" => 'P',
+    b"GCC" => 'P',
+    b"CCC" => 'P',
+    b"TCC" => 'P',
+    //Glutamine (Q)
+    b"AAC" => 'Q',
+    b"GAC" => 'Q',
+    //Arginine (R)
+    b"AGA" => 'R',
+    b"GGA" => 'R',
+    b"TGC" => 'R',
+    b"CGC" => 'R',
+    b"AGC" => 'R',
+    b"GGC" => 'R',
+    //Serine (S)
+    b"TGA" => 'S',
+    b"CGA" => 'S',
+    b"TCT" => 'S',
+    b"CCT" => 'S',
+    b"ACT" => 'S',
+    b"GCT" => 'S',
+    //Threonine (T)
+    b"ACA" => 'T',
+    b"GCA" => 'T',
+    b"CCA" => 'T',
+    b"TCA" => 'T',
+    //Selenocysteine (U)
+    b"AGU" => 'U',
+    //Valine (V)
+    b"ATG" => 'V',
+    b"GTG" => 'V',
+    b"CTG" => 'V',
+    b"TTG" => 'V',
+    //Tryptophan (W)
+    b"GGT" => 'W',
+    //Tyrosine (Y)
+    b"TAT" => 'Y',
+    b"CAT" => 'Y',
+    //Stop Codons
+    b"AGT" => '*',
+    b"AAT" => '*',
+    b"GAT" => '*',
+    //Glutamic Acid (E) or glutamine (Q) (Z)
+    //X = any of the 13
+    //translation stop (*)
+    //gap of indeterminate length (-)
+};
+
 pub fn start_parse() {
     let file_mmap = Mmap::open_path("/home/dhc-user/transcriptome_translator/test/test-nucleo.FASTA", Protection::Read).unwrap();
     let bytes: &[u8] = unsafe {
@@ -396,7 +495,7 @@ fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
 
     for aminos in amino_seq.chunks(3).rev() {
         debug_assert!(aminos.len() == 3);
-        match CODONS.get(aminos) {
+        match REV_CODONS.get(aminos) {
             Some(&p) => done.push(p),
             None => println!("Done!"),
         }
