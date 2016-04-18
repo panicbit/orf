@@ -382,8 +382,8 @@ fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
 
     for aminos in amino_seq.chunks(3) {
         debug_assert!(aminos.len() == 3);
-        match CODONS.get(&*aminos) {
-            Some(ref p) => done.push(**p),
+        match CODONS.get(aminos) {
+            Some(&p) => done.push(p),
             None => println!("Done!"),
         }
     }
@@ -396,8 +396,8 @@ fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
 
     for aminos in amino_seq.chunks(3).rev() {
         debug_assert!(aminos.len() == 3);
-        match CODONS.get(&*aminos) {
-            Some(ref p) => done.push(**p),
+        match CODONS.get(aminos) {
+            Some(&p) => done.push(p),
             None => println!("Done!"),
         }
     }
