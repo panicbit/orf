@@ -15,7 +15,6 @@ use nom::{not_line_ending,line_ending};
 use nom::IResult;
 use memmap::{Mmap, Protection};
 use std::vec::*;
-use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
@@ -229,12 +228,14 @@ static REV_CODONS: phf::Map<&'static [u8], char> = phf_map! {
     //gap of indeterminate length (-)
 };
 
-pub fn start_parse<Input: AsRef<Path>, Output: AsRef<Path>>(input_path: Input, output_path: Output, n_threads: u32) {
+pub fn start_parse<Input, Output>(input_path: Input, mut output: Output, n_threads: u32) where
+    Input: AsRef<Path>,
+    Output: Write
+{
     let file_mmap = Mmap::open_path(input_path, Protection::Read).unwrap();
     let bytes: &[u8] = unsafe {
         file_mmap.as_slice() };
 //This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
-    let mut file = OpenOptions::new().create(true).read(false).write(true).open(output_path).unwrap();
     let mut threadpool = ThreadPool::new(n_threads);
     let (tx, rx) = channel();
     if let IResult::Done(_,o) = fasta_deserialize(bytes) {
@@ -294,12 +295,11 @@ pub fn start_parse<Input: AsRef<Path>, Output: AsRef<Path>>(input_path: Input, o
 
         for results in rx {
             for results in results {
-                file.write(results.window.as_bytes());
-                file.write(results.id.as_bytes());
-                file.write(results.sequence.as_bytes());
+                output.write(results.window.as_bytes());
+                output.write(results.id.as_bytes());
+                output.write(results.sequence.as_bytes());
             }
         }
-        file.sync_all();
 
     }
 }
