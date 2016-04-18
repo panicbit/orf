@@ -31,98 +31,98 @@ pub struct FASTA<'a> {
     pub sequence: Vec<&'a str>
 }
 
-static CODONS: phf::Map<&'static str, char> = phf_map! {
+static CODONS: phf::Map<&'static [u8], char> = phf_map! {
     //Alanine
-    "GCA" => 'A',
-    "GCG" => 'A',
-    "GCC" => 'A',
-    "GCT" => 'A',
+    b"GCA" => 'A',
+    b"GCG" => 'A',
+    b"GCC" => 'A',
+    b"GCT" => 'A',
     //Aspartic_Acid (D)
     //Asparagine (N)
     //Cysteine
-    "TGT" => 'C',
-    "TGC" => 'C',
+    b"TGT" => 'C',
+    b"TGC" => 'C',
     //Aspartic_Acid
-    "GAC" => 'D',
-    "GAT" => 'D',
+    b"GAC" => 'D',
+    b"GAT" => 'D',
     //Glutamic_Acid
-    "GAA" => 'E',
-    "GAG" => 'E',
+    b"GAA" => 'E',
+    b"GAG" => 'E',
     //Phenylalanine
-    "TTT" => 'F',
-    "TTC" => 'F',
+    b"TTT" => 'F',
+    b"TTC" => 'F',
     //Glycine
-    "GGA" => 'G',
-    "GGG" => 'G',
-    "GGC" => 'G',
-    "GGT" => 'G',
+    b"GGA" => 'G',
+    b"GGG" => 'G',
+    b"GGC" => 'G',
+    b"GGT" => 'G',
     //Histidine
-    "CAC" => 'H',
-    "CAT" => 'H',
+    b"CAC" => 'H',
+    b"CAT" => 'H',
     //Isoleucine
-    "ATT" => 'I',
-    "ATC" => 'I',
-    "ATA" => 'I',
+    b"ATT" => 'I',
+    b"ATC" => 'I',
+    b"ATA" => 'I',
     //Leucine (L)
-    "TTG" => 'L',
-    "TTA" => 'L',
-    "CTA" => 'L',
-    "CTC" => 'L',
-    "CTG" => 'L',
-    "CTT" => 'L',
+    b"TTG" => 'L',
+    b"TTA" => 'L',
+    b"CTA" => 'L',
+    b"CTC" => 'L',
+    b"CTG" => 'L',
+    b"CTT" => 'L',
     //Lysine (K)
-    "AAA" => 'K',
-    "AAG" => 'K',
+    b"AAA" => 'K',
+    b"AAG" => 'K',
     //Methionine (M)
-    "ATG" => 'M',
+    b"ATG" => 'M',
     //Asparagine (N)
-    "AAT" => 'N',
-    "AAC" => 'N',
+    b"AAT" => 'N',
+    b"AAC" => 'N',
     //Pyrrolysine (O) Special Stop Codon
-    "UAG" => 'O',
+    b"UAG" => 'O',
     //Proline (P)
-    "CCA" => 'P',
-    "CCG" => 'P',
-    "CCC" => 'P',
-    "CCT" => 'P',
+    b"CCA" => 'P',
+    b"CCG" => 'P',
+    b"CCC" => 'P',
+    b"CCT" => 'P',
     //Glutamine (Q)
-    "CAA" => 'Q',
-    "CAG" => 'Q',
+    b"CAA" => 'Q',
+    b"CAG" => 'Q',
     //Arginine (R)
-    "AGA" => 'R',
-    "AGG" => 'R',
-    "CGT" => 'R',
-    "CGC" => 'R',
-    "CGA" => 'R',
-    "CGG" => 'R',
+    b"AGA" => 'R',
+    b"AGG" => 'R',
+    b"CGT" => 'R',
+    b"CGC" => 'R',
+    b"CGA" => 'R',
+    b"CGG" => 'R',
     //Serine (S)
-    "AGT" => 'S',
-    "AGC" => 'S',
-    "TCT" => 'S',
-    "TCC" => 'S',
-    "TCA" => 'S',
-    "TCG" => 'S',
+    b"AGT" => 'S',
+    b"AGC" => 'S',
+    b"TCT" => 'S',
+    b"TCC" => 'S',
+    b"TCA" => 'S',
+    b"TCG" => 'S',
     //Threonine (T)
-    "ACA" => 'T',
-    "ACG" => 'T',
-    "ACC" => 'T',
-    "ACT" => 'T',
+    b"ACA" => 'T',
+    b"ACG" => 'T',
+    b"ACC" => 'T',
+    b"ACT" => 'T',
     //Selenocysteine (U)
-    "UGA" => 'U',
+    b"UGA" => 'U',
     //Valine (V)
-    "GTA" => 'V',
-    "GTG" => 'V',
-    "GTC" => 'V',
-    "GTT" => 'V',
+    b"GTA" => 'V',
+    b"GTG" => 'V',
+    b"GTC" => 'V',
+    b"GTT" => 'V',
     //Tryptophan (W)
-    "TGG" => 'W',
+    b"TGG" => 'W',
     //Tyrosine (Y)
-    "TAT" => 'Y',
-    "TAC" => 'Y',
+    b"TAT" => 'Y',
+    b"TAC" => 'Y',
     //Stop Codons
-    "TGA" => '*',
-    "TAA" => '*',
-    "TAG" => '*',
+    b"TGA" => '*',
+    b"TAA" => '*',
+    b"TAG" => '*',
     //Glutamic Acid (E) or glutamine (Q) (Z)
     //X = any of the 13
     //translation stop (*)
@@ -377,19 +377,14 @@ pub fn no_move<'a>(amino_seq: &[u8]) -> String {
 
 fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     // Trim elements from the end until the length is a multiple of 3
-    amino_seq = amino_seq.drop(amino_seq.len() % 3);
+    amino_seq = amino_seq.drop_last(amino_seq.len() % 3);
     debug_assert!(amino_seq.len() % 3 == 0);
 
-    while !amino_seq.is_empty() {
-        let mapped = &amino_seq[..3];
-        amino_seq = &amino_seq[3..];
-        let mapped = str::from_utf8(mapped);
-        for map in mapped {
-            let mapped = CODONS.get(&*map);
-            match mapped {
-                Some(ref p) => done.push(**p),
-                None => println!("Done!"),
-            }
+    for aminos in amino_seq.chunks(3) {
+        debug_assert!(aminos.len() == 3);
+        match CODONS.get(&*aminos) {
+            Some(ref p) => done.push(**p),
+            None => println!("Done!"),
         }
     }
 }
@@ -399,16 +394,11 @@ fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     amino_seq = amino_seq.drop_first(amino_seq.len() % 3);
     debug_assert!(amino_seq.len() % 3 == 0);
 
-    while !amino_seq.is_empty() {
-        let mapped = &amino_seq[amino_seq.len()-3..];
-        amino_seq = &amino_seq[..amino_seq.len()-3];
-        let mapped = str::from_utf8(mapped);
-        for map in mapped {
-            let mapped = CODONS.get(&*map);
-            match mapped {
-                Some(ref p) => done.push(**p),
-                None => println!("Done!"),
-            }
+    for aminos in amino_seq.chunks(3).rev() {
+        debug_assert!(aminos.len() == 3);
+        match CODONS.get(&*aminos) {
+            Some(ref p) => done.push(**p),
+            None => println!("Done!"),
         }
     }
 }
