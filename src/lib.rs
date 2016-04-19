@@ -5,7 +5,6 @@ extern crate phf;
 
 #[macro_use]
 extern crate nom;
-extern crate memmap;
 extern crate scoped_threadpool;
 extern crate monster;
 
@@ -13,7 +12,6 @@ use std::str;
 use std::io::prelude::*;
 use nom::{not_line_ending,line_ending};
 use nom::IResult;
-use memmap::{Mmap, Protection};
 use std::vec::*;
 use std::path::Path;
 use std::sync::mpsc::{Sender, Receiver};
@@ -228,17 +226,13 @@ static REV_CODONS: phf::Map<&'static [u8], char> = phf_map! {
     //gap of indeterminate length (-)
 };
 
-pub fn start_parse<Input, Output>(input_path: Input, mut output: Output, n_threads: u32) where
-    Input: AsRef<Path>,
+pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) where
     Output: Write
 {
-    let file_mmap = Mmap::open_path(input_path, Protection::Read).unwrap();
-    let bytes: &[u8] = unsafe {
-        file_mmap.as_slice() };
 //This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
     let mut threadpool = ThreadPool::new(n_threads);
     let (tx, rx) = channel();
-    if let IResult::Done(_,o) = fasta_deserialize(bytes) {
+    if let IResult::Done(_,o) = fasta_deserialize(input) {
         threadpool.scoped(|threadpool| {
             for fasta in o {
                 let tx = tx.clone();
