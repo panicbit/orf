@@ -343,7 +343,7 @@ pub fn rev_nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = String::new();
+    let mut done = String::with_capacity(amino_seq.len() / 3 + 2);;
     done.push('\n');
 
     // Shift sequence two elements to the right
@@ -392,7 +392,7 @@ pub fn rev_no_move(amino_seq: &[u8]) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = String::new();
+    let mut done = String::with_capacity(amino_seq.len() / 3 + 2);;
     done.push('\n');
 
     rev_trim_and_map(&amino_seq, &mut done);
@@ -414,7 +414,7 @@ pub fn nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = String::new();
+    let mut done = String::with_capacity(amino_seq.len() / 3 + 2);;
 
     // Shift elements to the left twice
     amino_seq = amino_seq.drop_first(2);
@@ -437,7 +437,7 @@ pub fn nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = String::new();
+    let mut done = String::with_capacity(amino_seq.len() / 3 + 2);;
     done.push('\n');
 
     // Shift elements to the left once
@@ -460,7 +460,7 @@ pub fn no_move<'a>(amino_seq: &[u8]) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = String::new();
+    let mut done = String::with_capacity(amino_seq.len() / 3 + 2);;
     done.push('\n');
 
     trim_and_map(amino_seq, &mut done);
