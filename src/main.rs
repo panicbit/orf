@@ -7,6 +7,7 @@ extern crate phf;
 extern crate nom;
 extern crate memmap;
 extern crate scoped_threadpool;
+extern crate monster;
 
 use std::str;
 use std::io::prelude::*;
@@ -22,6 +23,7 @@ use std::mem;
 use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
 use std::rc::Rc;
+use monster::incubation::{SliceDropFirst, SliceDropLast};
 
 #[derive(Debug)]
 pub struct FASTA<'a> {
@@ -29,98 +31,197 @@ pub struct FASTA<'a> {
     pub sequence: Vec<&'a str>
 }
 
-static CODONS: phf::Map<&'static str, u8> = phf_map! {
+static CODONS: phf::Map<&'static [u8], char> = phf_map! {
     //Alanine
-    "GCA" => 'A' as u8,
-    "GCG" => 'A' as u8,
-    "GCC" => 'A' as u8,
-    "GCT" => 'A' as u8,
+    b"GCA" => 'A',
+    b"GCG" => 'A',
+    b"GCC" => 'A',
+    b"GCT" => 'A',
     //Aspartic_Acid (D)
     //Asparagine (N)
     //Cysteine
-    "TGT" => 'C' as u8,
-    "TGC" => 'C' as u8,
+    b"TGT" => 'C',
+    b"TGC" => 'C',
     //Aspartic_Acid
-    "GAC" => 'D' as u8,
-    "GAT" => 'D' as u8,
+    b"GAC" => 'D',
+    b"GAT" => 'D',
     //Glutamic_Acid
-    "GAA" => 'E' as u8,
-    "GAG" => 'E' as u8,
+    b"GAA" => 'E',
+    b"GAG" => 'E',
     //Phenylalanine
-    "TTT" => 'F' as u8,
-    "TTC" => 'F' as u8,
+    b"TTT" => 'F',
+    b"TTC" => 'F',
     //Glycine
-    "GGA" => 'G' as u8,
-    "GGG" => 'G' as u8,
-    "GGC" => 'G' as u8,
-    "GGT" => 'G' as u8,
+    b"GGA" => 'G',
+    b"GGG" => 'G',
+    b"GGC" => 'G',
+    b"GGT" => 'G',
     //Histidine
-    "CAC" => 'H' as u8,
-    "CAT" => 'H' as u8,
+    b"CAC" => 'H',
+    b"CAT" => 'H',
     //Isoleucine
-    "ATT" => 'I' as u8,
-    "ATC" => 'I' as u8,
-    "ATA" => 'I' as u8,
+    b"ATT" => 'I',
+    b"ATC" => 'I',
+    b"ATA" => 'I',
     //Leucine (L)
-    "TTG" => 'L' as u8,
-    "TTA" => 'L' as u8,
-    "CTA" => 'L' as u8,
-    "CTC" => 'L' as u8,
-    "CTG" => 'L' as u8,
-    "CTT" => 'L' as u8,
+    b"TTG" => 'L',
+    b"TTA" => 'L',
+    b"CTA" => 'L',
+    b"CTC" => 'L',
+    b"CTG" => 'L',
+    b"CTT" => 'L',
     //Lysine (K)
-    "AAA" => 'K' as u8,
-    "AAG" => 'K' as u8,
+    b"AAA" => 'K',
+    b"AAG" => 'K',
     //Methionine (M)
-    "ATG" => 'M' as u8,
+    b"ATG" => 'M',
     //Asparagine (N)
-    "AAT" => 'N' as u8,
-    "AAC" => 'N' as u8,
+    b"AAT" => 'N',
+    b"AAC" => 'N',
     //Pyrrolysine (O) Special Stop Codon
-    "UAG" => 'O' as u8,
+    b"UAG" => 'O',
     //Proline (P)
-    "CCA" => 'P' as u8,
-    "CCG" => 'P' as u8,
-    "CCC" => 'P' as u8,
-    "CCT" => 'P' as u8,
+    b"CCA" => 'P',
+    b"CCG" => 'P',
+    b"CCC" => 'P',
+    b"CCT" => 'P',
     //Glutamine (Q)
-    "CAA" => 'Q' as u8,
-    "CAG" => 'Q' as u8,
+    b"CAA" => 'Q',
+    b"CAG" => 'Q',
     //Arginine (R)
-    "AGA" => 'R' as u8,
-    "AGG" => 'R' as u8,
-    "CGT" => 'R' as u8,
-    "CGC" => 'R' as u8,
-    "CGA" => 'R' as u8,
-    "CGG" => 'R' as u8,
+    b"AGA" => 'R',
+    b"AGG" => 'R',
+    b"CGT" => 'R',
+    b"CGC" => 'R',
+    b"CGA" => 'R',
+    b"CGG" => 'R',
     //Serine (S)
-    "AGT" => 'S' as u8,
-    "AGC" => 'S' as u8,
-    "TCT" => 'S' as u8,
-    "TCC" => 'S' as u8,
-    "TCA" => 'S' as u8,
-    "TCG" => 'S' as u8,
+    b"AGT" => 'S',
+    b"AGC" => 'S',
+    b"TCT" => 'S',
+    b"TCC" => 'S',
+    b"TCA" => 'S',
+    b"TCG" => 'S',
     //Threonine (T)
-    "ACA" => 'T' as u8,
-    "ACG" => 'T' as u8,
-    "ACC" => 'T' as u8,
-    "ACT" => 'T' as u8,
+    b"ACA" => 'T',
+    b"ACG" => 'T',
+    b"ACC" => 'T',
+    b"ACT" => 'T',
     //Selenocysteine (U)
-    "UGA" => 'U' as u8,
+    b"UGA" => 'U',
     //Valine (V)
-    "GTA" => 'V' as u8,
-    "GTG" => 'V' as u8,
-    "GTC" => 'V' as u8,
-    "GTT" => 'V' as u8,
+    b"GTA" => 'V',
+    b"GTG" => 'V',
+    b"GTC" => 'V',
+    b"GTT" => 'V',
     //Tryptophan (W)
-    "TGG" => 'W' as u8,
+    b"TGG" => 'W',
     //Tyrosine (Y)
-    "TAT" => 'Y' as u8,
-    "TAC" => 'Y' as u8,
+    b"TAT" => 'Y',
+    b"TAC" => 'Y',
     //Stop Codons
-    "TGA" => '*' as u8,
-    "TAA" => '*' as u8,
-    "TAG" => '*' as u8,
+    b"TGA" => '*',
+    b"TAA" => '*',
+    b"TAG" => '*',
+    //Glutamic Acid (E) or glutamine (Q) (Z)
+    //X = any of the 13
+    //translation stop (*)
+    //gap of indeterminate length (-)
+};
+
+// Reversed codon map
+static REV_CODONS: phf::Map<&'static [u8], char> = phf_map! {
+    //Alanine
+    b"ACG" => 'A',
+    b"GCG" => 'A',
+    b"CCG" => 'A',
+    b"TCG" => 'A',
+    //Aspartic_Acid (D)
+    //Asparagine (N)
+    //Cysteine
+    b"TGT" => 'C',
+    b"CGT" => 'C',
+    //Aspartic_Acid
+    b"CAG" => 'D',
+    b"TAG" => 'D',
+    //Glutamic_Acid
+    b"AAG" => 'E',
+    b"GAG" => 'E',
+    //Phenylalanine
+    b"TTT" => 'F',
+    b"CTT" => 'F',
+    //Glycine
+    b"AGG" => 'G',
+    b"GGG" => 'G',
+    b"CGG" => 'G',
+    b"TGG" => 'G',
+    //Histidine
+    b"CAC" => 'H',
+    b"TAC" => 'H',
+    //Isoleucine
+    b"TTA" => 'I',
+    b"CTA" => 'I',
+    b"ATA" => 'I',
+    //Leucine (L)
+    b"GTT" => 'L',
+    b"ATT" => 'L',
+    b"ATC" => 'L',
+    b"CTC" => 'L',
+    b"GTC" => 'L',
+    b"TTC" => 'L',
+    //Lysine (K)
+    b"AAA" => 'K',
+    b"GAA" => 'K',
+    //Methionine (M)
+    b"GTA" => 'M',
+    //Asparagine (N)
+    b"TAA" => 'N',
+    b"CAA" => 'N',
+    //Pyrrolysine (O) Special Stop Codon
+    b"GAU" => 'O',
+    //Proline (P)
+    b"ACC" => 'P',
+    b"GCC" => 'P',
+    b"CCC" => 'P',
+    b"TCC" => 'P',
+    //Glutamine (Q)
+    b"AAC" => 'Q',
+    b"GAC" => 'Q',
+    //Arginine (R)
+    b"AGA" => 'R',
+    b"GGA" => 'R',
+    b"TGC" => 'R',
+    b"CGC" => 'R',
+    b"AGC" => 'R',
+    b"GGC" => 'R',
+    //Serine (S)
+    b"TGA" => 'S',
+    b"CGA" => 'S',
+    b"TCT" => 'S',
+    b"CCT" => 'S',
+    b"ACT" => 'S',
+    b"GCT" => 'S',
+    //Threonine (T)
+    b"ACA" => 'T',
+    b"GCA" => 'T',
+    b"CCA" => 'T',
+    b"TCA" => 'T',
+    //Selenocysteine (U)
+    b"AGU" => 'U',
+    //Valine (V)
+    b"ATG" => 'V',
+    b"GTG" => 'V',
+    b"CTG" => 'V',
+    b"TTG" => 'V',
+    //Tryptophan (W)
+    b"GGT" => 'W',
+    //Tyrosine (Y)
+    b"TAT" => 'Y',
+    b"CAT" => 'Y',
+    //Stop Codons
+    b"AGT" => '*',
+    b"AAT" => '*',
+    b"GAT" => '*',
     //Glutamic Acid (E) or glutamine (Q) (Z)
     //X = any of the 13
     //translation stop (*)
@@ -150,32 +251,32 @@ pub fn start_parse() {
                     let nomove = FASTA_Complete {
                         window: "> No Move|",
                         id: fasta.id,
-                        sequence: no_move(amino_seq.clone())
+                        sequence: no_move(&amino_seq)
                     };
                     let sl1 = FASTA_Complete {
                         window: "> Shift Left One|",
                         id: fasta.id,
-                        sequence: nucleotide_shift_left_one(amino_seq.clone())
+                        sequence: nucleotide_shift_left_one(&amino_seq)
                     };
                     let sl2 = FASTA_Complete {
                         window: "> Shift Left Two|",
                         id: fasta.id,
-                        sequence: nucleotide_shift_left_two(amino_seq.clone())
+                        sequence: nucleotide_shift_left_two(&amino_seq)
                     };
                     let rnm = FASTA_Complete {
                         window: "> Rev. No Move|",
                         id: fasta.id,
-                        sequence: rev_no_move(amino_seq.clone())
+                        sequence: rev_no_move(&amino_seq)
                     };
                     let rsl1 = FASTA_Complete {
                         window: "> Rev. Shift Left One|",
                         id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_one(amino_seq.clone())
+                        sequence: rev_nucleotide_shift_left_one(&amino_seq)
                     };
                     let rsl2 = FASTA_Complete {
                         window: "> Rev. Shift Left Two|",
                         id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_two(amino_seq.clone())
+                        sequence: rev_nucleotide_shift_left_two(&amino_seq)
                     };
                     vec.push(nomove);
                     vec.push(sl1);
@@ -233,7 +334,7 @@ pub fn rc_handler(read: FASTA) -> Rc<FASTA> {
 
 }
 
-pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // fn rev_nucleotide_shift_left_two does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -247,21 +348,19 @@ pub fn rev_nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    done.push(b'\n');
-    amino_clone.reverse();
-    amino_clone.remove(0);
-    amino_clone.remove(0);
+    let mut done = String::new();
+    done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift sequence two elements to the right
+    amino_seq = amino_seq.drop_last(2);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    rev_trim_and_map(&amino_seq, &mut done);
+
+    done.push('\n');
     done
 }
 
-pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
+pub fn rev_nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     // fn rev_nucleotide_shift_left_one does the following:
     // Reverses all elements in the Array.
     // Removes element at position '0'
@@ -274,20 +373,19 @@ pub fn rev_nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    done.push(b'\n');
-    amino_clone.reverse();
-    amino_clone.remove(0);
+    let mut done = String::new();
+    done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the right once
+    amino_seq = amino_seq.drop_last(1);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    rev_trim_and_map(&amino_seq, &mut done);
+
+    done.push('\n');
     done
 }
 
-pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
+pub fn rev_no_move(amino_seq: &[u8]) -> String {
     // fn rev_no_move does the following:
     // Reverses all elements in the Array.
     // Then we check to see if the vector is a multiple of three
@@ -299,19 +397,16 @@ pub fn rev_no_move(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    done.push(b'\n');
-    amino_clone.reverse();
+    let mut done = String::new();
+    done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    rev_trim_and_map(&amino_seq, &mut done);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    done.push('\n');
     done
 }
 
-pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_two(mut amino_seq: &[u8]) -> String {
     // fn nucleotide_shift_left_two does the following:
     // Removes element at position '0'
     // Removes elemtne at position '0'
@@ -324,19 +419,18 @@ pub fn nucleotide_shift_left_two(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    amino_clone.remove(0);
-    amino_clone.remove(0);
+    let mut done = String::new();
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the left twice
+    amino_seq = amino_seq.drop_first(2);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    trim_and_map(&amino_seq, &mut done);
+
+    done.push('\n');
     done
 }
 
-pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
+pub fn nucleotide_shift_left_one(mut amino_seq: &[u8]) -> String {
     // fn nucleotide_shift_left_one does the following:
     // Removes elemtne at position '0'
     // Then we check to see if the vector is a multiple of three
@@ -348,19 +442,19 @@ pub fn nucleotide_shift_left_one(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    done.push(b'\n');
-    amino_clone.remove(0);
+    let mut done = String::new();
+    done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    // Shift elements to the left once
+    amino_seq = amino_seq.drop_first(1);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    trim_and_map(amino_seq, &mut done);
+
+    done.push('\n');
     done
 }
 
-pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
+pub fn no_move<'a>(amino_seq: &[u8]) -> String {
     // fn no_move does the following:
     // Then we check to see if the vector is a multiple of three
     // IF the vector is not a multiple of three we remove from the end
@@ -371,34 +465,39 @@ pub fn no_move<'a>(amino_clone: Vec<u8>) -> String {
     // u8 Amino Acid encoding,
     // We then push the results of the Amino Acid encoding to a vector.
     // We push() a newline to the end of the String to assist with file encoding.
-    let mut done = Vec::<u8>::new();
-    let mut amino_clone = amino_clone;
-    done.push(b'\n');
+    let mut done = String::new();
+    done.push('\n');
 
-    trim_and_map(&mut amino_clone, &mut done);
+    trim_and_map(amino_seq, &mut done);
 
-    done.push(b'\n');
-    let done = String::from_utf8(done).unwrap();
+    done.push('\n');
     done
 }
 
-fn trim_and_map(amino_clone: &mut Vec<u8>, done: &mut Vec<u8>) {
+fn trim_and_map(mut amino_seq: &[u8], done: &mut String) {
     // Trim elements from the end until the length is a multiple of 3
-    let waste = amino_clone.len() % 3;
-    for _ in 0..waste {
-        amino_clone.pop();
-    }
-    debug_assert!(amino_clone.len() % 3 == 0);
+    amino_seq = amino_seq.drop_last(amino_seq.len() % 3);
+    debug_assert!(amino_seq.len() % 3 == 0);
 
-    while amino_clone.is_empty() == false {
-        let mapped = amino_clone.drain(..3).collect::<Vec<u8>>();
-        let mapped = String::from_utf8(mapped);
-        for map in mapped {
-            let mapped = CODONS.get(&*map);
-            match mapped {
-                Some(ref p) => done.push(**p),
-                None => println!("Done!"),
-            }
+    for aminos in amino_seq.chunks(3) {
+        debug_assert!(aminos.len() == 3);
+        match CODONS.get(aminos) {
+            Some(&p) => done.push(p),
+            None => println!("Done!"),
+        }
+    }
+}
+
+fn rev_trim_and_map(mut amino_seq: &[u8], done: &mut String) {
+    // Trim elements from the beginning until the length is a multiple of 3
+    amino_seq = amino_seq.drop_first(amino_seq.len() % 3);
+    debug_assert!(amino_seq.len() % 3 == 0);
+
+    for aminos in amino_seq.chunks(3).rev() {
+        debug_assert!(aminos.len() == 3);
+        match REV_CODONS.get(aminos) {
+            Some(&p) => done.push(p),
+            None => println!("Done!"),
         }
     }
 }
