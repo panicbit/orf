@@ -49,12 +49,8 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                                 acc
                         });
                     let id = fasta.id;
-                    let dispatch_decoding = |window, decoder: fn(&[u8]) -> String| tx.send(FASTA_Complete {
-                        window: window,
-                        id: id,
-                        sequence: decoder(&amino_seq)
-                    });
-                    let mut vec: Vec<FASTA_Complete> = Vec::new();
+                    let dispatch_decoding = |window, decoder: fn(&[u8]) -> String|
+                        tx.send(FASTA_Complete::new(window, id, decoder(&amino_seq)));
                     dispatch_decoding("> No Move|", no_move);
                     dispatch_decoding("> Shift Left One|", nucleotide_shift_left_one);
                     dispatch_decoding("> Shift Left Two|", nucleotide_shift_left_two);
@@ -84,16 +80,12 @@ pub struct FASTA_Complete<'a> {
 }
 
 impl<'a> FASTA_Complete<'a> {
-    fn new() -> FASTA_Complete<'a> {
-        let sequence = String::new();
-        let window = "None";
-        let id = "None";
-        let FASTA_Complete = FASTA_Complete {
+    fn new(window: &'a str, id: &'a str, sequence: String) -> FASTA_Complete<'a> {
+        FASTA_Complete {
             window: window,
             id: id,
             sequence: sequence
-        };
-        FASTA_Complete
+        }
     }
 }
 //FASTA_Complete.window are hardcoded to include labeling the id with '>
