@@ -48,43 +48,19 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                                 acc.extend(item.as_bytes());
                                 acc
                         });
+                    let id = fasta.id;
+                    let dispatch_decoding = |window, decoder: fn(&[u8]) -> String| tx.send(FASTA_Complete {
+                        window: window,
+                        id: id,
+                        sequence: decoder(&amino_seq)
+                    });
                     let mut vec: Vec<FASTA_Complete> = Vec::new();
-                    let nomove = FASTA_Complete {
-                        window: "> No Move|",
-                        id: fasta.id,
-                        sequence: no_move(&amino_seq)
-                    };
-                    tx.send(nomove);
-                    let sl1 = FASTA_Complete {
-                        window: "> Shift Left One|",
-                        id: fasta.id,
-                        sequence: nucleotide_shift_left_one(&amino_seq)
-                    };
-                    tx.send(sl1);
-                    let sl2 = FASTA_Complete {
-                        window: "> Shift Left Two|",
-                        id: fasta.id,
-                        sequence: nucleotide_shift_left_two(&amino_seq)
-                    };
-                    tx.send(sl2);
-                    let rnm = FASTA_Complete {
-                        window: "> Rev. No Move|",
-                        id: fasta.id,
-                        sequence: rev_no_move(&amino_seq)
-                    };
-                    tx.send(rnm);
-                    let rsl1 = FASTA_Complete {
-                        window: "> Rev. Shift Left One|",
-                        id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_one(&amino_seq)
-                    };
-                    tx.send(rsl1);
-                    let rsl2 = FASTA_Complete {
-                        window: "> Rev. Shift Left Two|",
-                        id: fasta.id,
-                        sequence: rev_nucleotide_shift_left_two(&amino_seq)
-                    };
-                    tx.send(rsl2);
+                    dispatch_decoding("> No Move|", no_move);
+                    dispatch_decoding("> Shift Left One|", nucleotide_shift_left_one);
+                    dispatch_decoding("> Shift Left Two|", nucleotide_shift_left_two);
+                    dispatch_decoding("> Rev. No Move|", rev_no_move);
+                    dispatch_decoding("> Rev. Shift Left One|", rev_nucleotide_shift_left_one);
+                    dispatch_decoding("> Rev. Shift Left Two|", rev_nucleotide_shift_left_two);
                 });
             }
         });
