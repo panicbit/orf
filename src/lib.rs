@@ -249,50 +249,47 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                         id: fasta.id,
                         sequence: no_move(&amino_seq)
                     };
+                    tx.send(nomove);
                     let sl1 = FASTA_Complete {
                         window: "> Shift Left One|",
                         id: fasta.id,
                         sequence: nucleotide_shift_left_one(&amino_seq)
                     };
+                    tx.send(sl1);
                     let sl2 = FASTA_Complete {
                         window: "> Shift Left Two|",
                         id: fasta.id,
                         sequence: nucleotide_shift_left_two(&amino_seq)
                     };
+                    tx.send(sl2);
                     let rnm = FASTA_Complete {
                         window: "> Rev. No Move|",
                         id: fasta.id,
                         sequence: rev_no_move(&amino_seq)
                     };
+                    tx.send(rnm);
                     let rsl1 = FASTA_Complete {
                         window: "> Rev. Shift Left One|",
                         id: fasta.id,
                         sequence: rev_nucleotide_shift_left_one(&amino_seq)
                     };
+                    tx.send(rsl1);
                     let rsl2 = FASTA_Complete {
                         window: "> Rev. Shift Left Two|",
                         id: fasta.id,
                         sequence: rev_nucleotide_shift_left_two(&amino_seq)
                     };
-                    vec.push(nomove);
-                    vec.push(sl1);
-                    vec.push(sl2);
-                    vec.push(rnm);
-                    vec.push(rsl1);
-                    vec.push(rsl2);
-                    tx.send(vec).unwrap();
+                    tx.send(rsl2);
                 });
             }
         });
 
         drop(tx);
 
-        for results in rx {
-            for results in results {
-                output.write(results.window.as_bytes());
-                output.write(results.id.as_bytes());
-                output.write(results.sequence.as_bytes());
-            }
+        for result in rx {
+            output.write(result.window.as_bytes());
+            output.write(result.id.as_bytes());
+            output.write(result.sequence.as_bytes());
         }
 
     }
