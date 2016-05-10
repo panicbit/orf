@@ -229,7 +229,6 @@ static REV_CODONS: phf::Map<&'static [u8], char> = phf_map! {
 pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) where
     Output: Write
 {
-//This mmap technique is extremely fast and extremely efficient on large datasets. +1 for memmap
     let mut threadpool = ThreadPool::new(n_threads);
     let (tx, rx) = channel();
     if let IResult::Done(_,o) = fasta_deserialize(input) {
