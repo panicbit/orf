@@ -47,13 +47,12 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                             acc.extend(item.as_bytes());
                             acc
                     }));
-                let fasta = Arc::new(fasta);
+                let fasta_id = fasta.id;
                 let dispatch_decoding = |window, decoder: fn(&[u8]) -> String| {
-                    let fasta = fasta.clone();
                     let amino_seq = amino_seq.clone();
                     let tx = tx.clone();
                     threadpool.execute(move || {
-                        tx.send(FASTA_Complete::new(window, fasta.id, decoder(&amino_seq)));
+                        tx.send(FASTA_Complete::new(window, fasta_id, decoder(&amino_seq)));
                     });
                 };
                 dispatch_decoding("> No Move|", translator::no_move);
