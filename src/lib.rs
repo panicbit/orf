@@ -27,7 +27,7 @@ use std::sync::mpsc::channel;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct FASTA<'a> {
+struct FASTA<'a> {
     pub id: &'a str,
     pub sequence: Vec<&'a str>
 }
@@ -77,7 +77,7 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
 }
 
 #[derive(Debug)]
-pub struct FASTA_Complete<'a> {
+struct FASTA_Complete<'a> {
     window: &'a str,
     id: &'a str,
     sequence: String,
@@ -97,13 +97,13 @@ impl<'a> FASTA_Complete<'a> {
 //There is probably substantial room for improvement and the code could be deduplicated
 //After memmapping the file.  I personally prefer laying it all out even if it does get
 //a bit lengthy.
-pub fn rc_handler(read: FASTA) -> Rc<FASTA> {
+fn rc_handler(read: FASTA) -> Rc<FASTA> {
     let amino_seq = Rc::new(read);
     amino_seq
 
 }
 
-pub fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
+fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
     many0!(input,
       chain!(
         tag!(">") ~
