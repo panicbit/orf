@@ -92,17 +92,12 @@ impl<'a> FASTA_Complete<'a> {
         }
     }
 }
+
 //FASTA_Complete.window are hardcoded to include labeling the id with '>
 //and their reading frame.
 //There is probably substantial room for improvement and the code could be deduplicated
 //After memmapping the file.  I personally prefer laying it all out even if it does get
 //a bit lengthy.
-fn rc_handler(read: FASTA) -> Rc<FASTA> {
-    let amino_seq = Rc::new(read);
-    amino_seq
-
-}
-
 fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
     many0!(input,
       chain!(
