@@ -31,43 +31,46 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) -> 
 {
     let mut threadpool = ThreadPool::new(n_threads);
     let (tx, rx) = channel();
-    if let IResult::Done(_,o) = fasta_deserialize(input) {
-        threadpool.scoped(|threadpool| {
-            for fasta in o {
-                let tx = tx.clone();
-                let amino_seq: Arc<Vec<u8>> = Arc::new(fasta.sequence
-                    .iter()
-                    .fold(Vec::new(), |mut acc, item| {
-                            acc.extend(item.as_bytes());
-                            acc
-                    }));
-                let fasta_id = fasta.id;
-                let dispatch_decoding = |window, decoder: fn(&[u8]) -> String| {
-                    let amino_seq = amino_seq.clone();
+    match fasta_deserialize(input){
+        IResult::Done(_,o) => {
+            threadpool.scoped(|threadpool| {
+                for fasta in o {
                     let tx = tx.clone();
-                    threadpool.execute(move || {
-                        tx.send(FastaComplete::new(window, fasta_id, decoder(&amino_seq))).expect("send");
-                    });
-                };
-                dispatch_decoding("> No Move|", translator::no_move);
-                dispatch_decoding("> Shift Left One|", translator::nucleotide_shift_left_one);
-                dispatch_decoding("> Shift Left Two|", translator::nucleotide_shift_left_two);
-                dispatch_decoding("> Rev. No Move|", translator::rev_no_move);
-                dispatch_decoding("> Rev. Shift Left One|", translator::rev_nucleotide_shift_left_one);
-                dispatch_decoding("> Rev. Shift Left Two|", translator::rev_nucleotide_shift_left_two);
+                    let amino_seq: Arc<Vec<u8>> = Arc::new(fasta.sequence
+                        .iter()
+                        .fold(Vec::new(), |mut acc, item| {
+                                acc.extend(item.as_bytes());
+                                acc
+                        }));
+                    let fasta_id = fasta.id;
+                    let dispatch_decoding = |window, decoder: fn(&[u8]) -> String| {
+                        let amino_seq = amino_seq.clone();
+                        let tx = tx.clone();
+                        threadpool.execute(move || {
+                            tx.send(FastaComplete::new(window, fasta_id, decoder(&amino_seq))).expect("send");
+                        });
+                    };
+                    dispatch_decoding("> No Move|", translator::no_move);
+                    dispatch_decoding("> Shift Left One|", translator::nucleotide_shift_left_one);
+                    dispatch_decoding("> Shift Left Two|", translator::nucleotide_shift_left_two);
+                    dispatch_decoding("> Rev. No Move|", translator::rev_no_move);
+                    dispatch_decoding("> Rev. Shift Left One|", translator::rev_nucleotide_shift_left_one);
+                    dispatch_decoding("> Rev. Shift Left Two|", translator::rev_nucleotide_shift_left_two);
+                }
+            });
+
+            drop(tx);
+
+            for result in rx {
+                output.write(result.window.as_bytes())?;
+                output.write(result.id.as_bytes())?;
+                output.write(result.sequence.as_bytes())?;
             }
-        });
 
-        drop(tx);
-
-        for result in rx {
-            output.write(result.window.as_bytes())?;
-            output.write(result.id.as_bytes())?;
-            output.write(result.sequence.as_bytes())?;
+            Ok(())
         }
+        _ => Err(Error::Parsing)
     }
-
-    Ok(())
 }
 
 #[derive(Debug)]
