@@ -9,7 +9,7 @@ documentation = "https://github.com/rundrop1/transcriptome_translator/README.md"
 
 
 [dependencies]
-nom = "~1.2.0"
+nom = "1.2.3"
 memmap = "0.2.3"
 phf = "0.7.12"
 phf_macros = "0.7.12"
