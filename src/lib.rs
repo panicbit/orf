@@ -15,16 +15,9 @@ use std::str;
 use std::io::prelude::*;
 use nom::{not_line_ending,line_ending};
 use nom::IResult;
-use std::vec::*;
-use std::path::Path;
 use std::sync::Arc;
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
-use std::thread;
-use std::mem;
 use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
-use std::rc::Rc;
 
 #[derive(Debug)]
 struct FASTA<'a> {
