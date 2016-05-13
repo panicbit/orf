@@ -1,5 +1,4 @@
-#![feature(plugin)]
-#![feature(type_macros)]
+#![feature(plugin,type_macros,question_mark)]
 #![plugin(phf_macros)]
 extern crate phf;
 
@@ -12,12 +11,14 @@ mod codons;
 mod translator;
 
 use std::str;
+use std::io;
 use std::io::prelude::*;
 use nom::{not_line_ending,line_ending};
 use nom::IResult;
 use std::sync::Arc;
 use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
+use std::fmt;
 
 #[derive(Debug)]
 struct Fasta<'a> {
@@ -25,7 +26,7 @@ struct Fasta<'a> {
     pub sequence: Vec<&'a str>
 }
 
-pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) where
+pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) -> Result where
     Output: Write
 {
     let mut threadpool = ThreadPool::new(n_threads);
@@ -45,7 +46,7 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                     let amino_seq = amino_seq.clone();
                     let tx = tx.clone();
                     threadpool.execute(move || {
-                        tx.send(FastaComplete::new(window, fasta_id, decoder(&amino_seq)));
+                        tx.send(FastaComplete::new(window, fasta_id, decoder(&amino_seq))).expect("send");
                     });
                 };
                 dispatch_decoding("> No Move|", translator::no_move);
@@ -60,12 +61,13 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
         drop(tx);
 
         for result in rx {
-            output.write(result.window.as_bytes());
-            output.write(result.id.as_bytes());
-            output.write(result.sequence.as_bytes());
+            output.write(result.window.as_bytes())?;
+            output.write(result.id.as_bytes())?;
+            output.write(result.sequence.as_bytes())?;
         }
-
     }
+
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -104,4 +106,27 @@ fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<Fasta>>  {
         }
       )
    )
+}
+
+pub type Result = std::result::Result<(), Error>;
+
+#[derive(Debug)]
+pub enum Error {
+    Io(io::Error),
+    Parsing,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::Io(ref e) => write!(f, "{}", e),
+            Error::Parsing => write!(f, "Parsing failed")
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Self {
+        Error::Io(e)
+    }
 }
