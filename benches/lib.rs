@@ -14,7 +14,7 @@ fn bench_100_simple_trans(b: &mut Bencher) {
 
     b.iter(|| {
         for _ in 0 .. 100 {
-            transcriptome_translation::start_parse(input, &mut output, n_threads);
+            transcriptome_translation::start_parse(input, &mut output, n_threads).expect("parse");
         }
     });
 }
@@ -41,6 +41,6 @@ fn bench_trans(b: &mut Bencher, input: &[u8]) {
     let mut output = sink();
     let n_threads = num_cpus::get() as u32;
     b.iter(|| {
-        transcriptome_translation::start_parse(input, &mut output, n_threads);
+        transcriptome_translation::start_parse(input, &mut output, n_threads).expect("parse");
     });
 }
