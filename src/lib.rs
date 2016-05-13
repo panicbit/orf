@@ -20,7 +20,7 @@ use scoped_threadpool::Pool as ThreadPool;
 use std::sync::mpsc::channel;
 
 #[derive(Debug)]
-struct FASTA<'a> {
+struct Fasta<'a> {
     pub id: &'a str,
     pub sequence: Vec<&'a str>
 }
@@ -45,7 +45,7 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
                     let amino_seq = amino_seq.clone();
                     let tx = tx.clone();
                     threadpool.execute(move || {
-                        tx.send(FASTA_Complete::new(window, fasta_id, decoder(&amino_seq)));
+                        tx.send(FastaComplete::new(window, fasta_id, decoder(&amino_seq)));
                     });
                 };
                 dispatch_decoding("> No Move|", translator::no_move);
@@ -69,15 +69,15 @@ pub fn start_parse<Output>(input: &[u8], mut output: Output, n_threads: u32) whe
 }
 
 #[derive(Debug)]
-struct FASTA_Complete<'a> {
+struct FastaComplete<'a> {
     window: &'a str,
     id: &'a str,
     sequence: String,
 }
 
-impl<'a> FASTA_Complete<'a> {
-    fn new(window: &'a str, id: &'a str, sequence: String) -> FASTA_Complete<'a> {
-        FASTA_Complete {
+impl<'a> FastaComplete<'a> {
+    fn new(window: &'a str, id: &'a str, sequence: String) -> FastaComplete<'a> {
+        FastaComplete {
             window: window,
             id: id,
             sequence: sequence
@@ -85,19 +85,19 @@ impl<'a> FASTA_Complete<'a> {
     }
 }
 
-//FASTA_Complete.window are hardcoded to include labeling the id with '>
+//FastaComplete.window are hardcoded to include labeling the id with '>
 //and their reading frame.
 //There is probably substantial room for improvement and the code could be deduplicated
 //After memmapping the file.  I personally prefer laying it all out even if it does get
 //a bit lengthy.
-fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<FASTA>>  {
+fn fasta_deserialize(input:&[u8]) -> IResult<&[u8], Vec<Fasta>>  {
     many0!(input,
       chain!(
         tag!(">") ~
         id: map_res!(not_line_ending, str::from_utf8) ~ line_ending ~
         sequence: many0!(terminated!(map_res!( is_not!(">\n"), str::from_utf8), tag!("\n"))),
         ||{
-            FASTA {
+            Fasta {
                 id: id,
                 sequence: sequence
             }
