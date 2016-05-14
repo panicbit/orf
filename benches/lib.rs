@@ -14,7 +14,33 @@ fn bench_100_simple_trans(b: &mut Bencher) {
 
     b.iter(|| {
         for _ in 0 .. 100 {
-            transcriptome_translation::start_parse(input, &mut output, n_threads);
+            transcriptome_translation::start_parse(input, &mut output, n_threads).expect("parse");
         }
+    });
+}
+
+#[bench]
+fn bench_many_small_trans(b: &mut Bencher) {
+    let input = include_bytes!("../benches/test-nucleo_many_small.FASTA");
+    bench_trans(b, input);
+}
+
+#[bench]
+fn bench_many_big_trans(b: &mut Bencher) {
+    let input = include_bytes!("../benches/test-nucleo_many_big.FASTA");
+    bench_trans(b, input);
+}
+
+#[bench]
+fn bench_single_huge(b: &mut Bencher) {
+    let input = include_bytes!("../benches/test-nucleo_single_big.FASTA");
+    bench_trans(b, input);
+}
+
+fn bench_trans(b: &mut Bencher, input: &[u8]) {
+    let mut output = sink();
+    let n_threads = num_cpus::get() as u32;
+    b.iter(|| {
+        transcriptome_translation::start_parse(input, &mut output, n_threads).expect("parse");
     });
 }
