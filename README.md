@@ -1,4 +1,14 @@
 # orf - open reading frame
+[![Travis](https://img.shields.io/travis/panicbit/orf.svg?style=flat-square)][travis]
+[![Coveralls](https://img.shields.io/coveralls/panicbit/orf.svg?style=flat-square)][coveralls]
+[![Crates.io Version](https://img.shields.io/crates/v/orf.svg?style=flat-square)][crates.io]
+[![Crates.io Downloads](https://img.shields.io/crates/dv/orf.svg?style=flat-square)][crates.io]
+[![Crates.io License](https://img.shields.io/crates/l/orf.svg?style=flat-square)][crates.io]
+
+[crates.io]: https://crates.io/crates/orf
+[travis]: https://travis-ci.org/panicbit/orf
+[coveralls]: https://coveralls.io/github/panicbit/orf
+
 Translates nucleotide sequences to Amino Acid sequences. (RNA and DNA, shifts reading frames and reverses)
 
 Takes a FASTA file of nucleotide sequences and outputs another FASTA file with Amino Acids.
