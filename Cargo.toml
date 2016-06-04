@@ -1,5 +1,5 @@
 [package]
-name = "transcriptome_translation"
+name = "orf"
 version = "0.1.0"
 authors = ["Steve.H <rundrop1@zoho.com>"]
 license = "MIT"

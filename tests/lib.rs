@@ -1,4 +1,4 @@
-extern crate transcriptome_translation;
+extern crate orf;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -9,7 +9,7 @@ fn simple() {
     let expected_result = read_file("tests/results.txt");
     let mut result = Vec::new();
 
-    transcriptome_translation::start_parse(&input, &mut result, 1).expect("parse");
+    orf::start_parse(&input, &mut result, 1).expect("parse");
 
     assert!(result == expected_result, "Result differs from expected result");
 }
