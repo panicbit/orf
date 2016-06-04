@@ -31,7 +31,7 @@ addons:
 env:
   global:
   # override the default `--features unstable` used for the nightly branch (optional)
-  #- TRAVIS_CARGO_NIGHTLY_FEATURE=""
+  - TRAVIS_CARGO_NIGHTLY_FEATURE=""
   - secure: z8JoFqE9U4Tmx0Vx9QbmRDxXiAOtUJVYaYNRbteRGP6JJIfqIaqj4jpCFJl0ik+8OF2N4P/q4PaQ8b3wIP0HkCslNGemV0T+5j4Yn3rcFx/+lLKgixiasxev3uHyz0OT+oikAKmwEd/I4s1hFe+iO4NF9h2r+C+fZwaYJQn1amAtqwy5IBTdKCApk65N87u07RnIp7PWUKShe3aQb+bvHTdHg0ylumzO9+YEbFotS5IvA8rFNW+7JpE6sQB35Se2TJjByUja0ziLQ//vXTK/ZJJ3XLpJ0o+VG3hn+hPBX41iHaPDi4q80O+URCv0Ypj+AQIDsCvodcEOEXkvDUsDqWDk0fkCYQP5LBrjprMNxHAEXDfD8F1ZrVBWg4FfgVgkxW3bYFM4KjATIxey8i8Yz1nS95xbuYfZeJ24ntB0bxGrGgF6oXmiAOegGGsFYjXfQhLAeQ7BI0/941XKxGvy6PR5s75iXGuTauTUoSmCRWjFqdAcqtwqASCxD8UZ/5Ut/ghaWbQmtAn5U/8yEdX+Uww1D+TldGwgaZPQHjhQ9yqjaZh27qo9mtIAnKlveHGnqYVlKA0tidC6vKazlr7USQ1jTPSYSlpiptxBzYw3ZIZTSs8t+udvmOQr0QYnYnlIkFsoESFwoHFkAFB92kXkt/g0Cg4u6P7OhXfgDdpY7+s=
   notifications:
   email:
