@@ -7,6 +7,9 @@ description = "Translates nucleotide sequences to Amino Acid sequences. (RNA and
 repository = "https://github.com/rundrop1/transcriptome_translator"
 documentation = "https://github.com/rundrop1/transcriptome_translator/README.md"
 
+[[bin]]
+name = "orf"
+doc = false
 
 [dependencies]
 nom = "1.2.3"
