@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["map_ref_mut","Map the value of a mutable reference. Useful if you want to apply a `FnOnce(T) -> T` to a `&mut T`. This function is unsafe because panicking in `f` would leave the pointee uninitialized."]],"trait":[["MapRefMutExt",""]]});

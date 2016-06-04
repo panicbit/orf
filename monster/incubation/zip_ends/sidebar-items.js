@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ZipEnds","An iterator adaptor to iterate over pairs of starting and ending elements."]],"trait":[["ZipEndsIterExt",""]]});

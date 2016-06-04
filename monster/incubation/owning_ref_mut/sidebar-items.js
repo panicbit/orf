@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["OwningRefMut","`OwningRefMut` allows you to return mutably borrowed values. Careful usage is advised, the lifetime semantics might not be entirely sound."]]});

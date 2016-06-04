@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["some_if","Returns `None` if `pred` is `false`, otherwise it returns `Some(result_of_calling_f)`."]]});
