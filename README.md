@@ -1,4 +1,4 @@
-# transcriptome_translator
+# orf - open reading frame
 Translates nucleotide sequences to Amino Acid sequences. (RNA and DNA, shifts reading frames and reverses)
 
 Takes a FASTA file of nucleotide sequences and outputs another FASTA file with Amino Acids.
